@@ -1,0 +1,43 @@
+from machine import Pin
+from time import sleep
+import network
+import webrepl
+
+
+def blink(*, led=Pin(2, Pin.OUT), delay=0.05, repeat=3):
+    for _ in range(repeat):
+        led.on(); sleep(delay)
+        led.off(); sleep(delay)
+
+wlan = network.WLAN(network.STA_IF)
+wlan.active(True)
+login, password = config.wifi_config.values()
+
+try:
+    wlan.connect(login, password)
+except Exception as e:
+    while not wlan.isconnected():
+        print("  Wi-Fi...", end='\r')
+        pass
+    else:
+        print('IP address:', wlan.ifconfig()[0])
+        blink(repeat=2)
+
+# webrepl.start(password=config.password)
+msg = f'link: http://{wlan.ifconfig()[0]}:8266/'
+
+if token := config.utelegram_config['token']:
+    try:
+        bot = utelegram.ubot(token)
+        # bot.send(config.utelegram_config['id'], msg)
+    except Exception as e:
+        pass
+
+# import utelnet.utelnetserver as ut
+# ut.start()
+
+# try:
+    # import server
+    # import controller
+# except Exception as e:
+    # print(e)

@@ -1,0 +1,19 @@
+// tasks.json
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Upload to ESP32",
+            "type": "shell",
+            "command": "/home/des/miniforge3/bin/ampy --port /dev/ttyUSB0 --baud 115200 put ${file}",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

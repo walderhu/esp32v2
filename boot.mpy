@@ -1,0 +1,28 @@
+import ujson
+from utime import sleep
+from machine import Pin
+import network
+from libs import utelegram
+
+def blink(*, led=Pin(2, Pin.OUT), delay=0.05, repeat=3):
+    for _ in range(repeat):
+        led.on(); sleep(delay)
+        led.off(); sleep(delay)
+
+with open("config.json") as f: config = ujson.load(f)
+wlan = network.WLAN(network.STA_IF); wlan.active(True)
+
+try:
+    ssid, password = config['wifi'].values()
+    wlan.connect(ssid, password)
+except Exception as e:
+    while not wlan.isconnected(): print("  Wi-Fi...", end='\r')
+    else: print('IP', wlan.ifconfig()[0])
+
+print('IP', wlan.ifconfig()[0])
+token, id = config['telegram'].values()
+print(f'{token=} {id=}')
+msg = f'Hello, des!!'
+try: bot = utelegram.ubot(token); bot.send(id, msg)
+except Exception as e: print("Telegram error:", e)
+
