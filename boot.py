@@ -17,15 +17,10 @@ while True:
     except: continue
     if wlan.isconnected(): break
 
-# from libs import utelegram 
-# token, chat_id = config['telegram'].values()
-# bot = utelegram.ubot(token)
-# bot.send(chat_id, "ESP32 подключен ✅")
-
 import webrepl
 if wlan.isconnected(): webrepl.start()
 else: print("WebREPL не стартует")
 
-# WebREPL server started on http://192.168.0.232:8266/
-# Started webrepl in normal mode
-# print('IP', wlan.ifconfig())
+
+
+blink()
