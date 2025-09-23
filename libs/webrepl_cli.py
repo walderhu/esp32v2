@@ -3,10 +3,9 @@ from __future__ import print_function
 import sys
 import os
 import struct
-try:
-    import usocket as socket
-except ImportError:
-    import socket
+
+try: import usocket as socket
+except ImportError: import socket
 
 # Define to 1 to use builtin "uwebsocket" module of MicroPython
 USE_BUILTIN_UWEBSOCKET = 0
