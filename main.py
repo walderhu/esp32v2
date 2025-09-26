@@ -1,161 +1,43 @@
-
-import math
+"""
+Пример для работы с шаговиком в синхронном режиме
+"""
+from machine import Pin
+from tools import Stepper
 import time
-
-import machine
-
-class Stepper:
-    def __init__(self, step_pin=14, dir_pin=15, en_pin=13, steps_per_rev=200,
-                 speed_sps=10, invert_dir=False, invert_enable=False, timer_id=-1):
-
-        if not isinstance(step_pin, machine.Pin):
-            step_pin = machine.Pin(step_pin, machine.Pin.OUT)
-        if not isinstance(dir_pin, machine.Pin):
-            dir_pin = machine.Pin(dir_pin, machine.Pin.OUT)
-        if (en_pin is not None) and (not isinstance(en_pin, machine.Pin)):
-            en_pin = machine.Pin(en_pin, machine.Pin.OUT)
-
-        self.step_value_func = step_pin.value
-        self.dir_value_func = dir_pin.value
-        self.en_pin = en_pin
-        self.invert_dir = invert_dir
-        self.invert_enable = invert_enable
-
-        self.timer = machine.Timer(timer_id)
-        self.timer_is_running = False
-        self.free_run_mode = 0
-        self.enabled = True
-
-        self.target_pos = 0
-        self.pos = 0
-        self.target_reached = True
-        self.steps_per_sec = speed_sps
-        self.steps_per_rev = steps_per_rev
-
-        self.track_target()
-
-    def speed(self, sps):
-        self.steps_per_sec = sps
-        if self.timer_is_running:
-            self.track_target()
-
-    def speed_rps(self, rps):
-        self.speed(rps * self.steps_per_rev)
-
-    def target(self, t):
-        self.target_reached = False
-        self.target_pos = t
-
-    def target_deg(self, deg):
-        self.target(round(self.steps_per_rev * deg / 360.0))
-
-    def target_rad(self, rad):
-        self.target(round(self.steps_per_rev * rad / (2.0 * math.pi)))
-
-    def get_pos(self): return self.pos
-    def get_pos_deg(self): return self.get_pos() * 360.0 / self.steps_per_rev
-    def get_pos_rad(self): return self.get_pos() * (2.0 * math.pi) / self.steps_per_rev
-
-    def overwrite_pos(self, p): self.pos = p
-
-    def overwrite_pos_deg(self, deg):
-        self.overwrite_pos(deg * self.steps_per_rev / 360.0)
-
-    def overwrite_pos_rad(self, rad):
-        self.overwrite_pos(rad * self.steps_per_rev / (2.0 * math.pi))
-
-    def step(self, d):
-        if d > 0:
-            if self.enabled:
-                self.dir_value_func(1 ^ self.invert_dir)
-                self.step_value_func(1)
-                self.step_value_func(0)
-            self.pos += 1
-        elif d < 0:
-            if self.enabled:
-                self.dir_value_func(0 ^ self.invert_dir)
-                self.step_value_func(1)
-                self.step_value_func(0)
-            self.pos -= 1
-        # time.sleep_ms(10)  
-
-    def _timer_callback(self, t):
-        if self.free_run_mode > 0: self.step(1)
-        elif self.free_run_mode < 0: self.step(-1)
-        elif self.target_pos > self.pos: self.step(1)
-        elif self.target_pos < self.pos: self.step(-1)
-        else: self.target_reached = True
-
-    def free_run(self, d):
-        self.free_run_mode = d
-        if self.timer_is_running: self.timer.deinit()
-        if d != 0:
-            self.timer.init(freq=self.steps_per_sec, callback=self._timer_callback)
-            self.timer_is_running = True
-        else:
-            self.dir_value_func(0)
-
-    def track_target(self):
-        self.free_run_mode = 0
-        if self.timer_is_running: self.timer.deinit()
-        self.timer.init(freq=self.steps_per_sec, callback=self._timer_callback)
-        self.timer_is_running = True
-
-    def stop(self):
-        self.free_run_mode = 0
-        if self.timer_is_running: self.timer.deinit()
-        self.timer_is_running = False
-        self.dir_value_func(0)
-
-    def enable(self, e):
-        self.enabled = e
-        if self.en_pin:
-            pin_state = bool(e) ^ self.invert_enable
-            self.en_pin.value(pin_state)
-        if not e: self.dir_value_func(0)
-
-    def is_enabled(self): return self.enabled
-    def is_target_reached(self): return self.target_reached
-
-    def __enter__(self):
-        self.enable(True)
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        try: 
-            if exc_type: raise self.StepperEngineError(exc_type)
-        finally:
-            self.enable(False)
-            self.stop()
-
-    class StepperEngineError(Exception):
-        def __init__(self, message): super().__init__(message)
-
 
 
 if __name__ == '__main__':
-    with Stepper(step_pin=14, dir_pin=15, en_pin=13, 
+    with Stepper(en_pin = Pin(13, Pin.OUT, drive=Pin.DRIVE_3),
+                 step_pin = Pin(14, Pin.OUT, drive=Pin.DRIVE_3),
+                 dir_pin = Pin(15, Pin.OUT,  drive=Pin.DRIVE_3),
                  steps_per_rev=200, speed_sps=1000, 
                  invert_enable=True) as stepper:
         print('Start')
         stepper.free_run(1)
         time.sleep(5)
 
+# stepper.target(3 * stepper.steps_per_rev)
+# while not stepper.is_target_reached(): time.sleep(0.1)
+# print("Готово, 3 оборота сделаны")
 
-#         stepper.target(3 * stepper.steps_per_rev)
-#         while not stepper.is_target_reached(): time.sleep(0.1)
-#         print("Готово, 3 оборота сделаны")
+# purelogic ist-1706 
+# import time
+# from machine import Pin
+# en_pin   = Pin(13, Pin.OUT, drive=Pin.DRIVE_3) 
+# step_pin = Pin(14, Pin.OUT, drive=Pin.DRIVE_3)  
+# dir_pin  = Pin(15, Pin.OUT,  drive=Pin.DRIVE_3)  
+
+# steps_per_rev = 200
+# n_steps = 10
+# invert_enable = True
+
+# print("Начало")
+# en_pin.value(not invert_enable)
+# dir_pin.value(1)
+# for i in range(n_steps * steps_per_rev):
+#     step_pin.value(1); time.sleep_us(5)
+#     step_pin.value(0); time.sleep_ms(1)  
+# en_pin.value(invert_enable)
+# print("Готово")
 
 
-
-
-
-
-# def step(d):
-#     if d == 0: return 
-#     global pos
-#     if enabled:
-#         dir_pin.value((d > 0) ^ invert_dir)
-#         step_pin.value(1)
-#         step_pin.value(0)
-#     pos += 1 if d > 0 else -1

@@ -1,32 +1,5 @@
 // settings.json
 {
-    "emeraldwalk.runonsave": {
-        "commands": [
-            {
-                "match": ".*\\.py$",
-                "isAsync": true,
-                "cmd": "/home/des/miniforge3/bin/ampy --port /dev/ttyUSB0 --baud 115200 put ${file}"
-            }
-        ]
-    },
-    "MicroPython.executeButton": [
-        {
-            "text": "▶",
-            "tooltip": "Run",
-            "alignment": "left",
-            "command": "extension.executeFile",
-            "priority": 3.5
-        }
-    ],
-    "MicroPython.syncButton": [
-        {
-            "text": "$(sync)",
-            "tooltip": "sync",
-            "alignment": "left",
-            "command": "extension.execute",
-            "priority": 4
-        }
-    ],
     "python.analysis.extraPaths": [
         "./stubs"
     ],
@@ -44,5 +17,16 @@
         "**/stubs/.gitignore": true,
         "**/stubs": true,
         "**/.*": true
-    }
+    },
+    "python.defaultInterpreterPath": "/home/des/miniforge3/envs/esp/bin/python",
+    "terminal.integrated.profiles.linux": {
+        "conda-esp": {
+            "path": "bash",
+            "args": [
+                "-c",
+                "source /home/des/miniforge3/etc/profile.d/conda.sh && conda activate esp && exec bash"
+            ]
+        }
+    },
+    "terminal.integrated.defaultProfile.linux": "conda-esp"
 }

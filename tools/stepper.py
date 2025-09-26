@@ -1,7 +1,4 @@
-
 import math
-import time
-
 import machine
 
 class Stepper:
@@ -53,12 +50,8 @@ class Stepper:
         self.target(round(self.steps_per_rev * rad / (2.0 * math.pi)))
 
     def get_pos(self): return self.pos
-
-    def get_pos_deg(self):
-        return self.get_pos() * 360.0 / self.steps_per_rev
-
-    def get_pos_rad(self):
-        return self.get_pos() * (2.0 * math.pi) / self.steps_per_rev
+    def get_pos_deg(self): return self.get_pos() * 360.0 / self.steps_per_rev
+    def get_pos_rad(self): return self.get_pos() * (2.0 * math.pi) / self.steps_per_rev
 
     def overwrite_pos(self, p): self.pos = p
 
@@ -69,18 +62,12 @@ class Stepper:
         self.overwrite_pos(rad * self.steps_per_rev / (2.0 * math.pi))
 
     def step(self, d):
-        if d > 0:
-            if self.enabled:
-                self.dir_value_func(1 ^ self.invert_dir)
-                self.step_value_func(1)
-                self.step_value_func(0)
-            self.pos += 1
-        elif d < 0:
-            if self.enabled:
-                self.dir_value_func(0 ^ self.invert_dir)
-                self.step_value_func(1)
-                self.step_value_func(0)
-            self.pos -= 1
+        if d == 0: return
+        if self.enabled:
+            self.dir_value_func(int(d > 0) ^ self.invert_dir)
+            self.step_value_func(1)
+            self.step_value_func(0)
+        self.pos += 1 if (d > 0) else -1
 
     def _timer_callback(self, t):
         if self.free_run_mode > 0: self.step(1)
@@ -117,24 +104,18 @@ class Stepper:
             self.en_pin.value(pin_state)
         if not e: self.dir_value_func(0)
 
-    def is_enabled(self):
-        return self.enabled
-
-    def is_target_reached(self):
-        return self.target_reached
+    def is_enabled(self): return self.enabled
+    def is_target_reached(self): return self.target_reached
 
     def __enter__(self):
-        self.enable(True)
+        self.enable(not self.invert_enable)
         return self
 
     def __exit__(self, exc_type, exc, tb):
-        try:
+        try: 
             if exc_type: raise self.StepperEngineError(exc_type)
         finally:
-            self.stop()
-            self.enable(False)
+            self.enable(self.invert_enable); self.stop()
 
     class StepperEngineError(Exception):
         def __init__(self, message): super().__init__(message)
-
-
