@@ -2,42 +2,21 @@
 Пример для работы с шаговиком в синхронном режиме
 """
 from machine import Pin
-from tools import Stepper
-import time
+from tools import AsyncStepper
+import uasyncio as asyncio
 
 
-if __name__ == '__main__':
-    with Stepper(en_pin = Pin(13, Pin.OUT, drive=Pin.DRIVE_3),
-                 step_pin = Pin(14, Pin.OUT, drive=Pin.DRIVE_3),
-                 dir_pin = Pin(15, Pin.OUT,  drive=Pin.DRIVE_3),
-                 steps_per_rev=200, speed_sps=1000, 
-                 invert_enable=True) as stepper:
-        print('Start')
-        stepper.free_run(1)
-        time.sleep(5)
-
-# stepper.target(3 * stepper.steps_per_rev)
-# while not stepper.is_target_reached(): time.sleep(0.1)
-# print("Готово, 3 оборота сделаны")
-
-# purelogic ist-1706 
-# import time
-# from machine import Pin
-# en_pin   = Pin(13, Pin.OUT, drive=Pin.DRIVE_3) 
-# step_pin = Pin(14, Pin.OUT, drive=Pin.DRIVE_3)  
-# dir_pin  = Pin(15, Pin.OUT,  drive=Pin.DRIVE_3)  
-
-# steps_per_rev = 200
-# n_steps = 10
-# invert_enable = True
-
-# print("Начало")
-# en_pin.value(not invert_enable)
-# dir_pin.value(1)
-# for i in range(n_steps * steps_per_rev):
-#     step_pin.value(1); time.sleep_us(5)
-#     step_pin.value(0); time.sleep_ms(1)  
-# en_pin.value(invert_enable)
-# print("Готово")
+async def main():
+    sw_pin = Pin(27, Pin.IN, Pin.PULL_UP)
+    sr1 = AsyncStepper(en_pin=Pin(2, Pin.OUT, drive=Pin.DRIVE_3),
+                       step_pin=Pin(16, Pin.OUT, drive=Pin.DRIVE_3),
+                       dir_pin=Pin(4, Pin.OUT, drive=Pin.DRIVE_3),
+                       steps_per_sec=5000, invert_enable=True)
+    try:
+        while True:
+            await asyncio.sleep(1e-3)
+            if sw_pin.value() == 0: sr1.step(1)
+    finally: sr1.stop_task()
 
 
+if __name__ == '__main__': asyncio.run(main())

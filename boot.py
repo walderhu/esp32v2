@@ -1,4 +1,4 @@
-#!/usr/bin/env micropython
+#!/usr/bin/env mp
 import ujson
 from utime import sleep
 from machine import Pin
@@ -20,7 +20,5 @@ while True:
 import webrepl
 if wlan.isconnected(): webrepl.start()
 else: print("WebREPL не стартует")
-
-
 
 blink()
