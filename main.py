@@ -53,12 +53,8 @@ class Stepper:
         self.target(round(self.steps_per_rev * rad / (2.0 * math.pi)))
 
     def get_pos(self): return self.pos
-
-    def get_pos_deg(self):
-        return self.get_pos() * 360.0 / self.steps_per_rev
-
-    def get_pos_rad(self):
-        return self.get_pos() * (2.0 * math.pi) / self.steps_per_rev
+    def get_pos_deg(self): return self.get_pos() * 360.0 / self.steps_per_rev
+    def get_pos_rad(self): return self.get_pos() * (2.0 * math.pi) / self.steps_per_rev
 
     def overwrite_pos(self, p): self.pos = p
 
@@ -73,16 +69,15 @@ class Stepper:
             if self.enabled:
                 self.dir_value_func(1 ^ self.invert_dir)
                 self.step_value_func(1)
-                time.sleep_us(5)   # 5–10 мкс задержка, чтобы драйвер увидел импульс
                 self.step_value_func(0)
             self.pos += 1
         elif d < 0:
             if self.enabled:
                 self.dir_value_func(0 ^ self.invert_dir)
                 self.step_value_func(1)
-                time.sleep_us(5)   # 5–10 мкс задержка, чтобы драйвер увидел импульс
                 self.step_value_func(0)
             self.pos -= 1
+        # time.sleep_ms(10)  
 
     def _timer_callback(self, t):
         if self.free_run_mode > 0: self.step(1)
@@ -119,33 +114,48 @@ class Stepper:
             self.en_pin.value(pin_state)
         if not e: self.dir_value_func(0)
 
-    def is_enabled(self):
-        return self.enabled
-
-    def is_target_reached(self):
-        return self.target_reached
+    def is_enabled(self): return self.enabled
+    def is_target_reached(self): return self.target_reached
 
     def __enter__(self):
         self.enable(True)
         return self
 
     def __exit__(self, exc_type, exc, tb):
-        try:
+        try: 
             if exc_type: raise self.StepperEngineError(exc_type)
         finally:
-            self.stop()
             self.enable(False)
+            self.stop()
 
     class StepperEngineError(Exception):
         def __init__(self, message): super().__init__(message)
 
 
+
 if __name__ == '__main__':
-    with Stepper(step_pin=14, 
-                 dir_pin=15, 
-                 en_pin=13, 
-                 steps_per_rev=200, 
-                 speed_sps=200, 
+    with Stepper(step_pin=14, dir_pin=15, en_pin=13, 
+                 steps_per_rev=200, speed_sps=1000, 
                  invert_enable=True) as stepper:
+        print('Start')
         stepper.free_run(1)
         time.sleep(5)
+
+
+#         stepper.target(3 * stepper.steps_per_rev)
+#         while not stepper.is_target_reached(): time.sleep(0.1)
+#         print("Готово, 3 оборота сделаны")
+
+
+
+
+
+
+# def step(d):
+#     if d == 0: return 
+#     global pos
+#     if enabled:
+#         dir_pin.value((d > 0) ^ invert_dir)
+#         step_pin.value(1)
+#         step_pin.value(0)
+#     pos += 1 if d > 0 else -1
