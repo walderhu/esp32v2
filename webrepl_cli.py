@@ -259,9 +259,6 @@ def parse_remote(remote):
     return (host, port, fname)
 
 
-# Very simplified client handshake, works for MicroPython's
-# websocket server implementation, but probably not for other
-# servers.
 def client_handshake(sock):
     cl = sock.makefile("rwb", 0)
     cl.write(b"""\
@@ -273,12 +270,9 @@ Sec-WebSocket-Key: foo\r
 \r
 """)
     l = cl.readline()
-#    print(l)
-    while 1:
+    while True:
         l = cl.readline()
-        if l == b"\r\n":
-            break
-#        sys.stdout.write(l)
+        if l == b"\r\n": break
 
 
 def main():
@@ -331,26 +325,20 @@ def main():
     addr = ai[0][4]
 
     s.connect(addr)
-    #s = s.makefile("rwb")
     client_handshake(s)
-
     ws = websocket(s)
-
     login(ws, passwd)
     print("Remote WebREPL version:", get_ver(ws))
-
-    # Set websocket to send data marked as "binary"
     ws.ioctl(9, 2)
 
-    if op == "repl":
-        do_repl(ws)
-    elif op == "get":
-        get_file(ws, dst_file, src_file)
-    elif op == "put":
-        put_file(ws, src_file, dst_file)
-
+    if op == "repl": do_repl(ws)
+    elif op == "get": get_file(ws, dst_file, src_file)
+    elif op == "put": put_file(ws, src_file, dst_file)
     s.close()
 
 
+
+
 if __name__ == "__main__":
-    main()
+    try: main()
+    except (KeyboardInterrupt, AssertionError): print('Program interrupted')

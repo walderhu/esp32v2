@@ -31,9 +31,9 @@ async def status_log(delay=0.5):
 
 
 async def main():
-    await connect_wifi()
-    print('Подключение установлено')
-    await status_log()
+    sta_if = await connect_wifi()
+    print(sta_if)
+    # await status_log()
 
 
 # Запуск программы
