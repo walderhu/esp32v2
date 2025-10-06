@@ -1,0 +1,22 @@
+{
+    "wifi": {
+        "LOGIN": "TP-Link_0D14",
+        "PASSWORD": "24827089"
+    },
+    "wifi_kfu": {
+        "LOGIN": "CIMM",
+        "PASSWORD": "cgrtools"
+    },
+    "wifi_phone": {
+        "LOGIN": "lipatovdn",
+        "PASSWORD": "1234567890"
+    },
+    "wifi_home": {
+        "LOGIN": "letai_fast_B359_5G",
+        "PASSWORD": "Uui84KLq"
+    },
+    "telegram": {
+        "token": "8169199071:AAFqyr5RA3V1yEdYVNsdIk4C9b6OF8bPUuE",
+        "id": "683190449"
+    }
+}
