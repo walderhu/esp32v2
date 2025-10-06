@@ -4,3 +4,6 @@ all:
 	npm init -y
 	npm install ws
 	node websocket_relay.js 
+
+clean: 
+	rm -rf node_modules/ package*
