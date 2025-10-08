@@ -24,18 +24,22 @@ def scan_files():
     changed_files = []
     current_files = set()
     current_dirs = set()
+    print("Scanning directory tree...")
     for root, dirs, files in os.walk(PROJECT_DIR):
         rel_root = os.path.relpath(root, PROJECT_DIR)
         if rel_root != '.':
             current_dirs.add(rel_root)
+            print(f"Found dir: {rel_root}")
         for f in files:
             path = os.path.join(root, f)
             rel_path = os.path.relpath(path, PROJECT_DIR)
             current_files.add(rel_path)
+            print(f"Found file: {rel_path}")
             h = get_file_hash(path)
             if rel_path not in file_hashes or file_hashes[rel_path] != h:
                 file_hashes[rel_path] = h
                 changed_files.append((rel_path, path))
+    print(f"Total files scanned: {len(current_files)}, changed: {len(changed_files)}")
     return changed_files, current_files, current_dirs
 
 def send_command(cmd, content=b""):
@@ -69,26 +73,64 @@ def delete_dir(rel_path):
     print(f"DEL {rel_path}: {resp}")
     deployed_dirs.discard(rel_path)
 
+def initial_sync():
+    """Инициальный синк: деплоит всё дерево на старте, независимо от хэшей"""
+    global deployed_files, deployed_dirs  # Declare globals at the start of the function
+    print("Performing initial full sync...")
+    # Сканируем всё
+    all_files, current_files, current_dirs = scan_files()
+    # Обновляем хэши для всех (даже если "не changed")
+    for rel_path in current_files:
+        full_path = os.path.join(PROJECT_DIR, rel_path)
+        h = get_file_hash(full_path)
+        file_hashes[rel_path] = h
+    # Сначала создаём все директории
+    all_dirs = current_dirs | deployed_dirs  # Now safe after global
+    for rel_path in all_dirs:
+        print("Initial deploying dir:", rel_path)
+        deploy_dir(rel_path)
+    # Деплоим все файлы (force all)
+    for rel_path in current_files:
+        full_path = os.path.join(PROJECT_DIR, rel_path)
+        print("Initial deploying file:", rel_path)
+        deploy_file(rel_path, full_path)
+    # Удаляем лишние (если deployed больше current)
+    to_delete_files = deployed_files - current_files
+    for rel_path in to_delete_files:
+        print("Initial deleting file:", rel_path)
+        delete_file(rel_path)
+    to_delete_dirs = deployed_dirs - current_dirs
+    for rel_path in to_delete_dirs:
+        print("Initial deleting dir:", rel_path)
+        delete_dir(rel_path)
+    # Обновляем tracked
+    deployed_files = current_files.copy()
+    deployed_dirs = current_dirs.copy()
+    print("Initial sync completed.")
+
 def main_loop():
     print("Watching for changes...")
     global deployed_files, deployed_dirs
+    # Инициальный синк перед циклом
+    initial_sync()
     while True:
         changed, current_files, current_dirs = scan_files()
-        # Деплой новых/изменённых файлов
-        for rel_path, full_path in changed:
-            print("Deploying file:", rel_path)
-            deploy_file(rel_path, full_path)
-        # Удаление файлов, которых нет локально
-        to_delete_files = deployed_files - current_files
-        for rel_path in to_delete_files:
-            print("Deleting file:", rel_path)
-            delete_file(rel_path)
-        # Деплой новых директорий
+        # Теперь только изменения (не all)
+        # Сначала новые dirs
         new_dirs = current_dirs - deployed_dirs
         for rel_path in new_dirs:
             print("Deploying dir:", rel_path)
             deploy_dir(rel_path)
-        # Удаление директорий, которых нет локально
+        # Изменённые файлы
+        for rel_path, full_path in changed:
+            print("Deploying file:", rel_path)
+            deploy_file(rel_path, full_path)
+        # Удаления файлов
+        to_delete_files = deployed_files - current_files
+        for rel_path in to_delete_files:
+            print("Deleting file:", rel_path)
+            delete_file(rel_path)
+        # Удаления dirs (после файлов)
         to_delete_dirs = deployed_dirs - current_dirs
         for rel_path in to_delete_dirs:
             print("Deleting dir:", rel_path)

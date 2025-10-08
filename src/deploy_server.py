@@ -90,7 +90,7 @@ def handle_client(conn, addr):
                         conn.sendall(b"ERROR\n")
                         continue
                     fname = ' '.join(words[1:])
-                    remove_path(fname)  # твоя функция рекурсивного удаления
+                    remove_path(fname)  
                     conn.sendall(b"OK\n")
 
                 elif cmd == "LIST":
@@ -99,58 +99,6 @@ def handle_client(conn, addr):
 
                 else:
                     conn.sendall(b"UNKNOWN\n")
-                # if line.startswith("MKDIR "):
-                #     _, dir_name = line.split(None, 1)  
-                #     path = ""
-                #     for p in dir_name.split("/"):
-                #         path = path + "/" + p if path else p
-                #         try:
-                #             os.mkdir(path)
-                #         except OSError:
-                #             pass
-                #     conn.sendall(b"OK\n")
-
-                # elif line.startswith("PUT "):
-                #     parts = line.split()
-                #     if len(parts) != 3:
-                #         conn.sendall(b"ERROR\n")
-                #         continue
-                #     _, fname, fsize = parts
-                #     fsize = int(fsize)
-
-                #     # Создаём директории
-                #     path = ""
-                #     for p in fname.split("/")[:-1]:
-                #         path = path + "/" + p if path else p
-                #         try:
-                #             os.mkdir(path)
-                #         except OSError:
-                #             pass
-
-                #     # Читаем контент
-                #     while len(buf) < fsize:
-                #         chunk = conn.recv(BUFFER_SIZE)
-                #         if not chunk:
-                #             break
-                #         buf += chunk
-                #     content, buf = buf[:fsize], buf[fsize:]
-
-                #     with open(fname, "wb") as f:
-                #         f.write(content)
-                #     conn.sendall(b"OK\n")
-
-                # elif line.startswith("DEL "):
-                #     _, fname = line.split(" ", 1)
-                #     remove_path(fname)
-                #     conn.sendall(b"OK\n")
-
-                # elif line == "LIST":
-                #     files = ",".join(os.listdir())
-                #     conn.sendall(files.encode() + b"\n")
-
-                # else:
-                #     conn.sendall(b"UNKNOWN\n")
-
     finally:
         conn.close()
         print("Connection closed")
