@@ -125,5 +125,4 @@ def start_deploy_server():
         s.close()
         print("Server stopped")
 
-if __name__ == "__main__":
-    start_deploy_server()
+

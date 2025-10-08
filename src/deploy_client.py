@@ -8,7 +8,7 @@ ESP_IP = "192.168.1.4"       # IP ESP
 ESP_PORT = 2323              # порт деплой сервера
 PROJECT_DIR = "/home/des/WORK/src"  # локальный проект
 CHECK_INTERVAL = 1.0         # период проверки изменений в секундах
-RECONNECT_INTERVAL = 5.0     # интервал ожидания при потере соединения
+RECONNECT_INTERVAL = 1.0     # интервал ожидания при потере соединения
 
 file_hashes = {}
 deployed_files = set()
@@ -99,7 +99,7 @@ def wait_for_connection():
     """Ожидание подключения к серверу"""
     print("Waiting for server connection...")
     while not test_connection():
-        print("Server not available, retrying in 5 seconds...")
+        print(f"Server not available, retrying in {RECONNECT_INTERVAL} seconds...")
         time.sleep(RECONNECT_INTERVAL)
 
 def initial_sync():

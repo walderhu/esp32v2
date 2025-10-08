@@ -38,11 +38,15 @@ def send_telegram(message, token, chat_id):
 
 def deploy():
     import deploy_server; deploy_server.start_deploy_server()
+# import deploy_server; deploy_server.temp_start_deploy_server()
+d = deploy
 
 with open("config.json") as f: config = json.load(f)
 ip = connect_wifi(*config['wifi_home'].values())
-import webrepl; webrepl.start()
 blink()
+# import webrepl; webrepl.start()
+
+
 # link = wss.start()  
 # send_telegram(link, *config['telegram'].values())
 # deploy_server.start_deploy_server() 
@@ -52,3 +56,8 @@ blink()
 
 
 # import test
+
+# import utelnetserver; utelnetserver.start()
+
+
+def dd(): import repl_server; repl_server.run()
