@@ -28,12 +28,9 @@ def connect_wifi(ssid, password):
     return f'{ip}:{port}/'
 
 
-
-
-
 def main():
     with open("config.json") as f: config = json.load(f)
-    local_link = connect_wifi(*config['wifi_home'].values())
+    # local_link = connect_wifi(*config['wifi_home'].values())
     remote_link = wss_start()
     # msg = f'{local_link}\n{remote_link}'
-    # send_telegram(msg, *config['telegram'].values())
+    send_telegram(remote_link, *config['telegram'].values())
