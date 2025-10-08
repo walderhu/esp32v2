@@ -5,8 +5,12 @@ from lib.wss_repl import start as wss_start
 
 
 def send_telegram(message, token, chat_id):
-    url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}"
-    urequests.get(url).close()
+    try:
+        url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}"
+        urequests.get(url).close()
+        print("Telegram message sent!")
+    except Exception as e:
+        print("Failed to send Telegram message:", e)
 
 
 def connect_wifi(ssid, password):
@@ -19,8 +23,17 @@ def connect_wifi(ssid, password):
             if sta.isconnected(): break
         else: print('Error: Could not connect to WiFi!')
 
+    ip = sta.ifconfig()[0]; port = 8266  
+    print(f'Connected! WebREPL available at: ws://{ip}:{port}/')
+    return f'{ip}:{port}/'
+
+
+
+
+
 def main():
     with open("config.json") as f: config = json.load(f)
-    connect_wifi(*config['wifi_home'].values())
-    lnk = wss_start()
-    send_telegram(lnk, *config['telegram'].values())
+    local_link = connect_wifi(*config['wifi_home'].values())
+    remote_link = wss_start()
+    # msg = f'{local_link}\n{remote_link}'
+    # send_telegram(msg, *config['telegram'].values())

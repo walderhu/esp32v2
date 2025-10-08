@@ -27,12 +27,12 @@ from watchdog.events import FileSystemEventHandler, FileModifiedEvent, FileCreat
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 # ========== Настройки ==========
-WSS_LINK = "https://viper-ide.org?wss=0DN3-HDJC-K2W6"   # <- сюда твоя ссылка
-SRC_DIR = Path("src").resolve()                         # <- папка, которую синхронизируем
+WSS_LINK = "https://viper-ide.org?wss=MK56-4PFY-76AD"   # <- сюда твоя ссылка
+SRC_DIR = Path(".").resolve()                         # <- папка, которую синхронизируем
 DEBOUNCE_SECONDS = 0.8                                 # собрать быстрые сохранения в одну загрузку
 BATCH_WAIT = 0.6                                       # задержка при пакетной загрузке
 UPLOAD_RETRY = 3                                       # попыток загрузки файла
-HEADLESS = True                                        # headless режим
+HEADLESS = False                                        # headless режим
 # Если нужно отлаживать - поставь False, чтобы видеть окно браузера
 # ========== Конец настроек ==========
 
@@ -211,6 +211,9 @@ def worker_thread_main(queue: Queue, wss_link: str, src_dir: Path):
                         page.wait_for_selector("body", timeout=10000)
                     except PlaywrightTimeoutError:
                         logging.debug("body selector not found quickly, continuing.")
+                        
+                    page.wait_for_timeout(10000)
+
 
                     if kind == "deleted":
                         # удаление: попытаемся найти файл в файловом дереве и удалить через UI
