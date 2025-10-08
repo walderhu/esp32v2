@@ -21,7 +21,8 @@ async def main():
     sr1.stop_task()
     sr2.stop_task()
 
-if __name__ == '__main__': asyncio.run(main())
+if __name__ == '__main__': 
+    asyncio.run(main())
 
 # sr1.move_to(1000)
 # while not sr1.target_reached: await asyncio.sleep(1 / sr1.steps_per_sec)

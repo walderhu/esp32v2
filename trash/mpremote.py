@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import sys
-from webrepl_cli import main as webrepl_main
+from i2c.webrepl_cli import main as webrepl_main
 
 DEFAULT_HOST = "192.168.0.248"
 DEFAULT_PORT = 1234

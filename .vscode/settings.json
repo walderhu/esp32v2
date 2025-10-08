@@ -28,5 +28,7 @@
             ]
         }
     },
-    "terminal.integrated.defaultProfile.linux": "conda-esp"
+    "terminal.integrated.defaultProfile.linux": "conda-esp",
+    "idf.pythonInstallPath": "/home/des/miniforge3/bin/python",
+    "idf.flashType": "UART"
 }

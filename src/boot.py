@@ -5,3 +5,5 @@ def blink(led=machine.Pin(2, machine.Pin.OUT), d=0.05, f=0.05, n=3):
     
 blink()
 import main; main.main()
+
+# import webrepl; webrepl.start()
