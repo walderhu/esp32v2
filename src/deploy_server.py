@@ -103,6 +103,7 @@ def handle_client(conn, addr):
         conn.close()
         print("Connection closed")
 
+
 def start_deploy_server():
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -110,9 +111,19 @@ def start_deploy_server():
     s.listen(5)
     print(f"Deploy server listening on port {PORT}")
 
-    while True:
-        conn, addr = s.accept()
-        handle_client(conn, addr)
+    try:
+        while True:
+            try:
+                conn, addr = s.accept()
+                handle_client(conn, addr)
+            except KeyboardInterrupt:
+                print("Server interrupted with Ctrl+C")
+                break
+    except Exception as e: 
+        print("Server error:", e)
+    finally:
+        s.close()
+        print("Server stopped")
 
 if __name__ == "__main__":
     start_deploy_server()

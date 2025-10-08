@@ -35,14 +35,13 @@ def send_telegram(message, token, chat_id):
     except Exception as e:
         print("Failed to send Telegram message:", e)
         
-     
-      
-        
+
+def deploy():
+    import deploy_server; deploy_server.start_deploy_server()
+
 with open("config.json") as f: config = json.load(f)
 ip = connect_wifi(*config['wifi_home'].values())
-
 import webrepl; webrepl.start()
-
 blink()
 # link = wss.start()  
 # send_telegram(link, *config['telegram'].values())
