@@ -1,11 +1,10 @@
 import machine
 from machine import Pin
 import uasyncio as asyncio
-import time
 
 class AsyncStepper:
     def __init__(self, step_pin, dir_pin, en_pin=None, steps_per_sec=200,
-                 invert_dir=False, invert_enable=False, drive=Pin.DRIVE_3):
+                 invert_dir=False, invert_enable=True, drive=Pin.DRIVE_3):
         
         if not isinstance(step_pin, machine.Pin):
             step_pin = machine.Pin(step_pin, machine.Pin.OUT, drive=drive)
@@ -13,11 +12,12 @@ class AsyncStepper:
             dir_pin = machine.Pin(dir_pin, machine.Pin.OUT, drive=drive)
         if (en_pin is not None) and (not isinstance(en_pin, machine.Pin)):
             en_pin = machine.Pin(en_pin, machine.Pin.OUT, drive=drive)  
+        
         self.step_pin, self.dir_pin, self.en_pin = step_pin, dir_pin, en_pin
-
         self.invert_dir = invert_dir
         self.invert_enable = invert_enable
         self.steps_per_sec = steps_per_sec
+        self.steps_per_sec = min(steps_per_sec, 1000)  
 
         self.enabled = True
         self.pos = 0
@@ -71,45 +71,59 @@ class AsyncStepper:
         self.enable(False) 
 
 
+    async def __aenter__(self):
+        self.enable(not self.invert_enable)
+        await asyncio.sleep(0)
+        return self
 
+    async def __aexit__(self, exc_type, exc_val, tb):
+        try:
+            if exc_type: raise self.AsyncStepperEngineError(str(exc_val))
+        finally:
+            self.stop()
+            self.enable(self.invert_enable)
+            await asyncio.sleep(0)
+
+
+    class AsyncStepperEngineError(Exception):
+        def __init__(self, message): super().__init__(message)
+        
 
 # async def main():
 #     sw_pin = Pin(27, Pin.IN, Pin.PULL_UP)
-#     sr1 = AsyncStepper(en_pin=13, step_pin=14, dir_pin=15, steps_per_sec=1000, invert_enable=True)
-    
-#     sr1.free_run(1)
-#     await asyncio.sleep(5)
-    
-#     time.sleep(1)
-#     sr1.invert_dir = not sr1.invert_dir
-#     time.sleep(1)
-    
-#     try:
-#         while True:
-#             await asyncio.sleep(1e-4)
-#             if sw_pin.value() == 0: sr1.step(1)
-#     except KeyboardInterrupt:
-#         sr1.stop_task()
-#     finally: sr1.stop_task()
+#     async with AsyncStepper(en_pin=13, step_pin=14, dir_pin=15, \
+#                         steps_per_sec=10000, invert_dir=True) as s:
+#         # s.free_run(1); await asyncio.sleep(10)  
+#         s.move_to(500)  
+#         while not s.target_reached: 
+#             if sw_pin.value() == 1: 
+#                 s.invert_dir = not s.invert_dir
+#                 sr1.step(1)
+
+#             await asyncio.sleep(0.01)
 
 
 
 async def main():
     sw_pin = Pin(27, Pin.IN, Pin.PULL_UP)
-    sr1 = AsyncStepper(en_pin=13, step_pin=14, dir_pin=15, steps_per_sec=30000, invert_enable=True)
-    sr1.free_run(1)
-    await asyncio.sleep(5)  
-    sr1.free_run(0)
-    await asyncio.sleep(1)
+    async with AsyncStepper(en_pin=13, step_pin=14, dir_pin=15, \
+                        steps_per_sec=10000, invert_dir=True) as s:
+        # s.invert_dir = not s.invert_dir
+        try:
+            while True:
+                await asyncio.sleep(1e-3)
+                if sw_pin.value() == 0: s.step(1)
+        except KeyboardInterrupt:
+            s.stop_task()
+        finally: s.stop_task()
 
-    # sr1.free_run(-1)
 
-    # while sw_pin.value() != 0: await asyncio.sleep(1e-3)
-    # sr1.stop_task()
-    # print("Концевик достигнут, остановка")
+            
 
 
-asyncio.run(main())
+if __name__ == '__main__': 
+    asyncio.run(main())
     
+# 1600 пульсов 1 оборот (18 шкифов на 1 оборот, примерно 18 мм)
     
 

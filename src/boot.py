@@ -50,11 +50,9 @@ webrepl.start()
 blink()
 
 
-# try: import main
-# except: pass
+import asyncio
+import sys
+sys.path.append('/remote')
+# import main  # теперь возьмётся локальный файл
 
 
-
-
-# import lib.wss_repl
-# lib.wss_repl.start()

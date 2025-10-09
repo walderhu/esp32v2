@@ -40,7 +40,7 @@ repl:
 
 
 HASHFILE := .hashes.local
-DEPLOYIGNORE := .hashes.local .hashes.local.new Makefile
+DEPLOYIGNORE := .hashes.local .hashes.local.new Makefile .vscode
 
 deploy:
 	@find . -type f $(foreach f,$(DEPLOYIGNORE),! -name '$(f)') | while read f; do \
