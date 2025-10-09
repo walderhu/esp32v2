@@ -104,25 +104,116 @@ def handle_client(conn, addr):
         print("Connection closed")
 
 
-def start_deploy_server():
+# def start_deploy_server():
+#     s = socket.socket()
+#     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#     s.bind(("0.0.0.0", PORT))
+#     s.listen(5)
+#     print(f"Deploy server listening on port {PORT}")
+
+#     try:
+#         while True:
+#             try:
+#                 conn, addr = s.accept()
+#                 handle_client(conn, addr)
+#             except KeyboardInterrupt:
+#                 print("Server interrupted with Ctrl+C")
+#                 break
+#     except Exception as e: 
+#         print("Server error:", e)
+#     finally:
+#         s.close()
+#         print("Server stopped")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# def start_deploy_server():
+#     s = socket.socket()
+#     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#     s.bind(("0.0.0.0", PORT))
+#     s.listen(5)
+#     print(f"Deploy server listening on port {PORT}")
+
+#     import time; start = time.time()
+
+#     try:
+#         while True:
+#             if time.time() - start > 5:
+#                 print("Time limit reached, stopping server.")
+#                 break
+#             try:
+#                 s.settimeout(0.5)
+#                 conn, addr = s.accept()
+#                 handle_client(conn, addr)
+#             except OSError:
+#                 pass
+#             except KeyboardInterrupt:
+#                 print("Server interrupted with Ctrl+C")
+#                 break
+#     except Exception as e: 
+#         print("Server error:", e)
+#     finally:
+#         s.close()
+#         print("Server stopped")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import uasyncio as asyncio
+import socket
+
+async def start_deploy_server():
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(("0.0.0.0", PORT))
     s.listen(5)
     print(f"Deploy server listening on port {PORT}")
+    
+    s.setblocking(False)  # обязательно, чтобы не блокировать цикл
+    loop = asyncio.get_event_loop()
 
     try:
         while True:
             try:
                 conn, addr = s.accept()
-                handle_client(conn, addr)
-            except KeyboardInterrupt:
-                print("Server interrupted with Ctrl+C")
-                break
-    except Exception as e: 
-        print("Server error:", e)
+                loop.create_task(handle_client(conn, addr))
+            except OSError:
+                await asyncio.sleep(0.1)  # ждём, не блокируя REPL
     finally:
         s.close()
         print("Server stopped")
 
-
+asyncio.create_task(start_deploy_server())
+print("Server started in background — REPL свободен")
