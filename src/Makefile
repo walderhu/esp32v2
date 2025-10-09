@@ -6,7 +6,6 @@ CLI = python tools/webrepl_cli.py
 
 FILE := $(word 2, $(MAKECMDGOALS))
 
-
 put:
 	@if [ -z "$(FILE)" ]; then \
 		echo "Ошибка: укажите FILE=имя_файла"; \
