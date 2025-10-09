@@ -1,6 +1,7 @@
 import time
 import machine
 import urequests 
+import uos as os
 import ujson as json
 import network
 import webrepl
@@ -33,37 +34,23 @@ def send_telegram(message):
     except Exception as e:
         print("Failed to send Telegram message:", e)
         
-
-import os
-import shutil
-
 def rm(path):
-    """Удаляет файл или каталог рекурсивно с устройства."""
-    if not os.path.exists(path):
-        print(f"{path} не найден")
-        return
-    if os.path.isfile(path):
-        os.remove(path)
-        print(f"Файл {path} удалён")
+    if not os.path.exists(path): return
+    if os.path.isfile(path): os.remove(path)
     elif os.path.isdir(path):
-        shutil.rmtree(path)
-        print(f"Каталог {path} удалён")
-        
+        for name in os.listdir(path): rm(f'{path}/{name}')  
+        os.rmdir(path)
+
 def ls(): print(os.listdir())
 
 
-
-
-
-
-
-
-
+# try: os.mkdir("/tools")
+# except OSError: pass
 
 with open("config.json") as f: config = json.load(f)
 ip = connect_wifi(*config['wifi_work'].values())
-blink()
-webrepl.start()
+send_telegram(f'{ip}')
+webrepl.start(); blink()
 
 try: import main
 except: pass
