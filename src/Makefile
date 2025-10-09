@@ -6,8 +6,9 @@ CLI = python tools/webrepl_cli.py
 
 FILE := $(word 2, $(MAKECMDGOALS))
 
-default: 
-	@$(MAKE) repl
+default: deploy
+	$(CLI) -p $(PASS) $(HOST); 
+# 	@$(MAKE) repl
 
 put:
 	@if [ -z "$(FILE)" ]; then \
@@ -27,28 +28,25 @@ get:
 
 repl:
 	@echo "🔌 Connecting to REPL..."
-	@$(CLI) -p $(PASS) $(HOST)
+	@bash -c '\
+	while true; do \
+		echo "🔄  Deploying files before REPL..."; \
+		$(MAKE) deploy; \
+		echo "🔌 Connecting to REPL..."; \
+		$(CLI) -p $(PASS) $(HOST) || true; \
+		sleep 0.5; \
+	done'
 
-
-# deploy:
-# 	@find . -type f | while read f; do \
-# 		dest=$${f#./}; \
-# 		echo "Uploading $$f -> /$$dest ..."; \
-# 		$(CLI) $$f $(HOST):/$$dest -p $(PASS) > /dev/null 2>&1; \
-# 	done
-# 	@echo "✅ Deploy complete."
 
 
 HASHFILE := .hashes.local
 DEPLOYIGNORE := .hashes.local .hashes.local.new Makefile
 
 deploy:
-# 	@echo "🔎 Calculating local file hashes..."
 	@find . -type f $(foreach f,$(DEPLOYIGNORE),! -name '$(f)') | while read f; do \
 		hash=$$(sha256sum "$$f" | cut -d' ' -f1); \
 		echo "$$hash $$f"; \
 	done > $(HASHFILE).new
-# 	@echo "➡️  Uploading changed files..."
 	@while read line; do \
 		hash=$$(echo $$line | cut -d' ' -f1); \
 		file=$$(echo $$line | cut -d' ' -f2-); \

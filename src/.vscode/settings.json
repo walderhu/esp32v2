@@ -1,0 +1,28 @@
+// settings.json
+{
+    "python.analysis.extraPaths": [
+        ".../stubs"
+    ],
+    "python.analysis.stubPath": "../stubs",
+    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingModuleSource": "none"
+    },
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/.git": true,
+        "**/.vscode": true,
+        "**/.*": true
+    },
+    "python.defaultInterpreterPath": "/home/des/miniforge3/envs/esp/bin/python",
+    "terminal.integrated.profiles.linux": {
+        "conda-esp": {
+            "path": "bash",
+            "args": [
+                "-c",
+                "source /home/des/miniforge3/etc/profile.d/conda.sh && conda activate esp && exec bash"
+            ]
+        }
+    },
+}

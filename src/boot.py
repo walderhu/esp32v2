@@ -40,17 +40,21 @@ def rm(path):
     elif os.path.isdir(path):
         for name in os.listdir(path): rm(f'{path}/{name}')  
         os.rmdir(path)
-
 def ls(): print(os.listdir())
-
-
-# try: os.mkdir("/tools")
-# except OSError: pass
+def reset(): machine.reset()
 
 with open("config.json") as f: config = json.load(f)
 ip = connect_wifi(*config['wifi_work'].values())
-send_telegram(f'{ip}')
-webrepl.start(); blink()
+webrepl.start()
 
-try: import main
-except: pass
+blink()
+
+
+# try: import main
+# except: pass
+
+
+
+
+# import lib.wss_repl
+# lib.wss_repl.start()
