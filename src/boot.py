@@ -35,6 +35,7 @@ def send_telegram(message):
         
 with open("config.json") as f: config = json.load(f)
 ip = connect_wifi(*config['wifi_work'].values())
+send_telegram(f'{ip}')
 blink()
 webrepl.start()
 
