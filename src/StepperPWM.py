@@ -192,14 +192,11 @@ class StepperPWMAsync:
 
         accel_steps = max(1, steps_total // 10)
         decel_start = steps_total - accel_steps
-
-        self.step_pwm.duty_u16(32768)  # PWM включён постоянно
-
+        self.step_pwm.duty_u16(32768)  
         steps_done = 0.0
-        dt = 0.001  # шаг интеграции частоты, сек
+        dt = 0.001 
 
         while steps_done < steps_total:
-            # Косинусное ускорение/торможение
             if steps_done < accel_steps:
                 ratio = steps_done / accel_steps
                 freq = max_freq * (1 - math.cos(math.pi / 2 * ratio))
@@ -209,31 +206,48 @@ class StepperPWMAsync:
             else:
                 freq = max_freq
 
-            # минимальная частота для движения
             freq = max(2000, freq)
             self.step_pwm.freq(int(freq))
 
-            # интегрируем пройденные шаги
             steps_done += freq * dt
             await asyncio.sleep(dt)
 
 
-    async def move_mm_accel_pwm(self, distance_mm, max_freq=20_000, min_freq=5_000, accel=0.1):
-        limit_accel_dist = distance_mm * accel # 10 % пути
-        start_slow_dist = distance_mm - limit_accel_dist
+
+
+
+
+
+    # async def move_mm_accel_pwm(self, distance_mm, max_freq=20_000, min_freq=5_000, accel=0.1):
+    #     limit_accel_dist = distance_mm * accel # 10 % пути
+    #     start_slow_dist = distance_mm - limit_accel_dist
+        
+    #     for curr_dist in range(distance_mm):
+    #         if curr_dist < limit_accel_dist: # ускорение 
+    #             perc = curr_dist / limit_accel_dist
+    #             curr_freq = min_freq + perc * (max_freq - min_freq)
+    #         elif curr_dist < start_slow_dist: curr_freq = max_freq # максимум скорости
+    #         else: # замедление
+    #             perc = 1 - curr_dist / limit_accel_dist
+    #             curr_freq = min_freq + perc * (max_freq - min_freq)
+    #         await self.move_mm(distance_mm=1, freq=curr_freq) 
+
+    async def move_mm_accel_pwm(self, distance_mm, max_freq=20_000, min_freq=5_000, ratio_accel=0.1):
+        limit_accel_dist = distance_mm * ratio_accel # 10 % пути
+        start_deccel_dist = distance_mm - limit_accel_dist
         
         for curr_dist in range(distance_mm):
             if curr_dist < limit_accel_dist: # ускорение 
-                perc = curr_dist / limit_accel_dist
-                curr_freq = min_freq + perc * (max_freq - min_freq)
-            elif curr_dist < start_slow_dist: curr_freq = max_freq # максимум скорости
+                ratio = curr_dist / limit_accel_dist
+                curr_freq = min_freq + ratio * (max_freq - min_freq)
+            elif curr_dist < start_deccel_dist: curr_freq = max_freq # максимум скорости
             else: # замедление
-                perc = 1 - curr_dist / limit_accel_dist
-                curr_freq = min_freq + perc * (max_freq - min_freq)
+                ratio = 1 - curr_dist / limit_accel_dist
+                curr_freq = min_freq + ratio * (max_freq - min_freq)
             await self.move_mm(distance_mm=1, freq=curr_freq) 
 
 
-
+###! я остановился здесь
 
 
 
