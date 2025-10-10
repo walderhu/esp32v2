@@ -65,20 +65,14 @@ class StepperPWMAsync:
 
         
         
+        
     async def run(self, direction=1, freq=1000, duration=None):
         """
-        Асинхронное вращение с поддержкой концевика:
-        - Если концевик уже сработал в выбранном направлении — меняем направление
-        - Во время движения: при срабатывании концевика — меняем направление
+        Асинхронное вращение двигателя с поддержкой концевика и авторазворотом
+        (с защитой от дребезга и удержания)
         """
         if not self.enabled:
             self.enable(True)
-
-        # Проверка концевика перед стартом
-        if direction == 0 and self.sw_pin.value() == 1:
-            direction = 1
-        elif direction == 1 and self.sw_pin.value() == 1:
-            direction = 0
 
         self.dir_pin.value(direction ^ self.invert_dir)
         self.step_pwm.freq(freq)
@@ -92,26 +86,32 @@ class StepperPWMAsync:
         if duration is not None:
             stop_time = time.ticks_add(start_time, int(duration * 1000))
 
+        prev_sw_state = self.sw_pin.value()  
+        debounce_ms = 200                    
+
         try:
             while self.running:
                 sw_state = self.sw_pin.value()
+                if sw_state == 1 and prev_sw_state == 0:
+                    print("⚠️ Концевик сработал — меняю направление!")
+                    self.step_pwm.duty_u16(0)
+                    await asyncio.sleep_ms(debounce_ms)
 
-                # Если движемся к концевику и он сработал — меняем направление
-                if sw_state == 1:
                     self.current_dir ^= 1
                     self.dir_pin.value(self.current_dir ^ self.invert_dir)
-                    await asyncio.sleep_ms(200)  # защита от дребезга
-                    self.step_pwm.duty_u16(32768)  # снова включаем шаги
 
-                # Проверка по времени
+                    await asyncio.sleep_ms(100)
+                    self.step_pwm.duty_u16(32768)
+
+                prev_sw_state = sw_state  
+
                 if stop_time and time.ticks_diff(time.ticks_ms(), stop_time) >= 0:
                     self.stop()
                     break
 
-                await asyncio.sleep_ms(5)
+                await asyncio.sleep_ms(10)
         finally:
             self.step_pwm.duty_u16(0)
-
 
 
         
@@ -127,7 +127,6 @@ class StepperPWMAsync:
         """Асинхронное вращение на обороты"""
         deg = revs * 360.0
         await self.run_deg(deg, speed_hz)
-
 
     async def move_mm(self, distance_mm, freq=1000):
         """Асинхронное перемещение на мм"""
@@ -171,17 +170,21 @@ class StepperPWMAsync:
 # ---------------------- Точка входа ----------------------
 import uasyncio as asyncio
 
+на_меня = 0; от_меня=1
+async def main():
+    async with StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13) as motor:
+        await motor.run(direction=на_меня, freq=5000, duration=3)
+        await asyncio.sleep(1)
+        await motor.run(direction=от_меня, freq=5000, duration=3)
+
 async def test():
     async with StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, lead_mm=2.5) as motor:
         await motor.home(freq=12_000)
-        
-        await motor.move_mm(distance_mm=60 * 10, freq=12_000) # 60
+        print(motor.lead_mm)
+
+        await motor.move_mm(distance_mm=60 * 10, freq=20_000) # 60
         await asyncio.sleep(0.2)
-        await motor.move_mm(distance_mm=-30 * 10, freq=12_000) # 11.5
-        await asyncio.sleep(0.2)
-        await motor.move_mm(distance_mm=10 * 10, freq=12_000) # 11.5
-        
-        await motor.home(freq=12_000)
+        await motor.move_mm(distance_mm=-10 * 10, freq=20_000) # 11.5
 
 asyncio.run(test())
 
