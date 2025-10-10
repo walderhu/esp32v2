@@ -6,7 +6,6 @@ import time
 class StepperPWMAsync:
     def __init__(self, step_pin=14, dir_pin=15, en_pin=13,
                  steps_per_rev=200, invert_dir=False, invert_enable=False, lead_mm=8):
-
         self.step_pwm = PWM(Pin(step_pin))
         self.dir_pin = Pin(dir_pin, Pin.OUT)
         self.en_pin = Pin(en_pin, Pin.OUT) if en_pin is not None else None
@@ -66,6 +65,7 @@ class StepperPWMAsync:
 
         
         
+        
     async def run(self, direction=1, freq=1000, duration=None):
         """
         Асинхронное вращение двигателя с поддержкой концевика и авторазворотом
@@ -92,23 +92,19 @@ class StepperPWMAsync:
         try:
             while self.running:
                 sw_state = self.sw_pin.value()
-
-                # Ловим фронт — когда кнопка ПЕРЕШЛА из 0 в 1
                 if sw_state == 1 and prev_sw_state == 0:
                     print("⚠️ Концевик сработал — меняю направление!")
                     self.step_pwm.duty_u16(0)
-                    await asyncio.sleep_ms(debounce_ms)  # ждём, пока концевик отпустится
+                    await asyncio.sleep_ms(debounce_ms)
 
-                    # Меняем направление
                     self.current_dir ^= 1
                     self.dir_pin.value(self.current_dir ^ self.invert_dir)
 
-                    await asyncio.sleep_ms(100)          # небольшая пауза перед запуском
+                    await asyncio.sleep_ms(100)
                     self.step_pwm.duty_u16(32768)
 
-                prev_sw_state = sw_state  # сохраняем состояние концевика
+                prev_sw_state = sw_state  
 
-                # Проверка на завершение по времени
                 if stop_time and time.ticks_diff(time.ticks_ms(), stop_time) >= 0:
                     self.stop()
                     break
@@ -183,8 +179,19 @@ async def main():
 
 async def test():
     async with StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13) as motor:
+        # await motor.run(от_меня, freq=10000, duration=20)
+        await motor.home(freq=12_000)
         
-        await motor.home(freq=10000)
-        # await motor.run(direction=на_меня, freq=3000, duration=100)
+        
+        motor.lead_mm = 2 * 1.4 * 0.9
+        motor.lead_mm *= 62 / 58.7
+        motor.lead_mm *= (23.5 - 1.2) / 23.5
+        motor.lead_mm *= (33.5 + 26) / 60
+        # motor.lead_mm *= 0.95
+        await motor.move_mm(distance_mm=60 * 10, freq=20_000) # 60
+        # await motor.move_mm(distance_mm=10 * 10, freq=20_000) # 11.5
 
 asyncio.run(test())
+
+
+# asyncio.run(StepperPWM.test())

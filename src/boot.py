@@ -43,9 +43,9 @@ def rm(path):
 def ls(): print(os.listdir())
 def reset(): machine.reset()
 
-with open("config.json") as f: config = json.load(f)
-ip = connect_wifi(*config['wifi_work'].values())
-webrepl.start()
+# with open("config.json") as f: config = json.load(f)
+# ip = connect_wifi(*config['wifi_work'].values())
+# webrepl.start()
 
 blink()
 
