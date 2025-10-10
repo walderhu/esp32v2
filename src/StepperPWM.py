@@ -27,8 +27,6 @@ class StepperPWMAsync:
         self.sw_pin = Pin(27, Pin.IN, Pin.PULL_UP)
 
 
-    # ---------------------- Управление ----------------------
-
     def enable(self, state=True):
         """Включить или выключить драйвер"""
         self.enabled = state
@@ -43,31 +41,31 @@ class StepperPWMAsync:
         self.step_pwm.duty_u16(0)
         self.running = False
 
-    # async def run(self, direction=1, freq=1000, duration=None):
-    #     """
-    #     Асинхронное вращение двигателя
-    #     direction — 1 или 0
-    #     freq — частота шагов (Гц)
-    #     duration — время вращения (сек) или None для непрерывного вращения
-    #     """
-    #     if not self.enabled: self.enable(True)
-
-    #     self.dir_pin.value(direction ^ self.invert_dir)
-    #     self.step_pwm.freq(freq)
-    #     self.step_pwm.duty_u16(32768)  # 50% duty
-    #     self.running = True
-    #     self.current_dir = direction
-    #     self.freq = freq
-
-    #     if self.sw_pin.value() == 1: self.stop()
-
-
-    #     if duration is not None:
-    #         await asyncio.sleep(duration)
-    #         self.stop()
-            
                 
 
+    async def home(self, freq=1000, debounce_ms=150):
+        """Возврат к концевику (нулевая позиция)"""
+        if not self.enabled: self.enable(True)
+        self.dir_pin.value(0 ^ self.invert_dir)
+        self.step_pwm.freq(freq)
+        self.step_pwm.duty_u16(32768)
+        self.running = True
+        self.current_dir = 0
+        self.freq = freq
+        try:
+            while True:
+                if self.sw_pin.value() == 1: 
+                    self.step_pwm.duty_u16(0)
+                    await asyncio.sleep_ms(debounce_ms)
+                    self.position_steps = 0
+                    break
+                await asyncio.sleep_ms(2)
+        finally:
+            self.step_pwm.duty_u16(0)
+            self.running = False
+
+        
+        
     async def run(self, direction=1, freq=1000, duration=None):
         """
         Асинхронное вращение двигателя с поддержкой концевика и авторазворотом
@@ -88,8 +86,8 @@ class StepperPWMAsync:
         if duration is not None:
             stop_time = time.ticks_add(start_time, int(duration * 1000))
 
-        prev_sw_state = self.sw_pin.value()  # запоминаем предыдущее состояние
-        debounce_ms = 200                    # защита от дребезга
+        prev_sw_state = self.sw_pin.value()  
+        debounce_ms = 200                    
 
         try:
             while self.running:
@@ -185,6 +183,8 @@ async def main():
 
 async def test():
     async with StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13) as motor:
-        await motor.run(direction=на_меня, freq=3000, duration=100)
+        
+        await motor.home(freq=10000)
+        # await motor.run(direction=на_меня, freq=3000, duration=100)
 
 asyncio.run(test())
