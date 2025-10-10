@@ -218,12 +218,23 @@ class StepperPWMAsync:
             await asyncio.sleep(dt)
 
 
-# async def move_mm_accel_pwm(self, distance_mm, max_freq=20_000, min_freq=5_000):
-#     limit_accel_dist = distance_mm / 10
-#     start_slow_dist = distance_mm - limit_accel_dist
-    
-    
-    # await motor.move_mm(distance_mm=30 * 10, freq=20_000) 
+    async def move_mm_accel_pwm(self, distance_mm, max_freq=20_000, min_freq=5_000, accel=0.1):
+        limit_accel_dist = distance_mm * accel # 10 % пути
+        start_slow_dist = distance_mm - limit_accel_dist
+        
+        for curr_dist in range(distance_mm):
+            if curr_dist < limit_accel_dist: # ускорение 
+                perc = curr_dist / limit_accel_dist
+                curr_freq = min_freq + perc * (max_freq - min_freq)
+            elif curr_dist < start_slow_dist: curr_freq = max_freq # максимум скорости
+            else: # замедление
+                perc = 1 - curr_dist / limit_accel_dist
+                curr_freq = min_freq + perc * (max_freq - min_freq)
+            await self.move_mm(distance_mm=1, freq=curr_freq) 
+
+
+
+
 
 
 # ---------------------- Точка входа ----------------------
