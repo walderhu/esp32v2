@@ -179,56 +179,80 @@ class StepperPWMAsync:
         import gc; gc.collect()
 
 
-    async def move_mm_accel_pwm(self, distance_mm, max_freq=20000):
-        """
-        Перемещение с косинусным ускорением/торможением через PWM.
-        Точно проходим distance_mm.
-        Стартовая частота ~2000 Гц, минимальная для движения 2000 Гц.
-        """
-        steps_total = abs(distance_mm) * self.steps_per_rev / self.lead_mm
-        direction = 1 if distance_mm > 0 else 0
-        self.dir_pin.value(direction)
-        self.enable(True)
+    # async def move_mm_accel(self, distance_mm, max_freq=1000):
+    #     """
+    #     Перемещение с косинусным ускорением и торможением через PWM
+    #     - 10% пути на разгон
+    #     - 80% на постоянной max_freq
+    #     - 10% на торможение
+    #     """
+    #     steps = int(abs(distance_mm) * self.steps_per_rev / self.lead_mm)
+    #     self.dir_pin.value(1 if distance_mm > 0 else 0)
+    #     self.enable(True)
 
-        accel_steps = max(1, steps_total // 10)
-        decel_start = steps_total - accel_steps
+    #     self.step_pwm.duty_u16(32768)  # PWM включён постоянно
 
-        self.step_pwm.duty_u16(32768)  # PWM включён постоянно
+    #     accel_steps = max(1, steps // 10)
+    #     decel_start = steps - accel_steps
 
-        steps_done = 0.0
-        dt = 0.001  # шаг интеграции частоты, сек
+    #     for i in range(steps):
+    #         if i < accel_steps:
+    #             ratio = i / accel_steps
+    #             freq = max_freq * (1 - math.cos(math.pi / 2 * ratio))  # разгон
+    #         elif i >= decel_start:
+    #             ratio = (i - decel_start) / accel_steps
+    #             freq = max_freq * math.cos(math.pi / 2 * ratio)        # торможение
+    #         else:
+    #             freq = max_freq
 
-        while steps_done < steps_total:
-            # Косинусное ускорение/торможение
-            if steps_done < accel_steps:
-                ratio = steps_done / accel_steps
-                freq = max_freq * (1 - math.cos(math.pi / 2 * ratio))
-            elif steps_done >= decel_start:
-                ratio = (steps_done - decel_start) / accel_steps
-                freq = max_freq * math.cos(math.pi / 2 * ratio)
-            else:
-                freq = max_freq
+    #         freq = max(1, freq)
+    #         self.step_pwm.freq(int(freq))  # меняем частоту PWM прямо на лету
 
-            # минимальная частота для движения
-            freq = max(2000, freq)
-            self.step_pwm.freq(int(freq))
-
-            # интегрируем пройденные шаги
-            steps_done += freq * dt
-            await asyncio.sleep(dt)
+    #         # маленькая пауза, чтобы цикл asyncio не заблокировал
+    #         await asyncio.sleep_ms(1)
 
 
-# async def move_mm_accel_pwm(self, distance_mm, max_freq=20_000, min_freq=5_000):
-#     limit_accel_dist = distance_mm / 10
-#     start_slow_dist = distance_mm - limit_accel_dist
+
+async def move_mm_accel(self, distance_mm, max_freq=1000):
+    """
+    Точный путь с косинусным ускорением и торможением.
+    Каждый шаг считается вручную, чтобы пройденная дистанция = distance_mm
+    """
+    steps = int(abs(distance_mm) * self.steps_per_rev / self.lead_mm)
+    self.dir_pin.value(1 if distance_mm > 0 else 0)
+    self.enable(True)
+
+    accel_steps = max(1, steps // 10)
+    decel_start = steps - accel_steps
+
+    for i in range(steps):
+        # Косинусное ускорение/торможение
+        if i < accel_steps:
+            ratio = i / accel_steps
+            freq = max_freq * (1 - math.cos(math.pi / 2 * ratio))
+        elif i >= decel_start:
+            ratio = (i - decel_start) / accel_steps
+            freq = max_freq * math.cos(math.pi / 2 * ratio)
+        else:
+            freq = max_freq
+
+        freq = max(1, freq)
+        delay = 1 / freq / 2  # делим на 2, потому что на HIGH и LOW
+
+        # делаем один шаг вручную
+        self.step_pwm.duty_u16(32768)  # поднять step
+        await asyncio.sleep(delay)
+        self.step_pwm.duty_u16(0)      # опустить step
+        await asyncio.sleep(delay)
     
-    
-    # await motor.move_mm(distance_mm=30 * 10, freq=20_000) 
-
 
 # ---------------------- Точка входа ----------------------
 import uasyncio as asyncio
 
+async def main():
+    async with StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, lead_mm=2.5) as motor:
+        await motor.home(freq=12_000)
+        
     
 async def test():
     
@@ -237,18 +261,7 @@ async def test():
 
     try:    
         await motor.home(freq=12_000)
-        # await motor.move_mm_accel_pwm(distance_mm=40 * 10, max_freq=20_000) # 60
-        
-        # await motor.move_mm(distance_mm=60 * 10, freq=12_000) # 60
-        await motor.home(freq=12_000)
-        await motor.move_mm(distance_mm=5 * 10, freq=10_000) # 60l
-        await motor.move_mm(distance_mm=10 * 10, freq=15_000) # 60
-        await motor.move_mm(distance_mm=30 * 10, freq=20_000) # 60
-        await motor.move_mm(distance_mm=10 * 10, freq=15_000) # 60
-        await motor.move_mm(distance_mm=5 * 10, freq=10_000) # 60
-        
-        await asyncio.sleep(0.2)
-        await motor.home(freq=12_000)
+        await motor.move_mm(distance_mm=60 * 10, freq=12_000) # 60l
     finally:
         motor.cleanup()
 
