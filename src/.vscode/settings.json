@@ -9,11 +9,11 @@
         "reportMissingModuleSource": "none"
     },
     "files.exclude": {
-        "**/__pycache__": true,
-        "**/*.pyc": true,
-        "**/.git": true,
-        "**/.vscode": true,
-        "**/.*": true
+        // "**/__pycache__": true,
+        // "**/*.pyc": true,
+        // "**/.git": true,
+        // "**/.vscode": true,
+        // "**/.*": true
     },
     "python.defaultInterpreterPath": "/home/des/miniforge3/envs/esp/bin/python",
     "terminal.integrated.profiles.linux": {

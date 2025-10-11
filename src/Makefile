@@ -1,15 +1,23 @@
 usbipd = "/mnt/c/Program Files/usbipd-win/usbipd.exe"
-HOST = 192.168.0.129
+HOST = 192.168.0.92
 PASS = 1234
-CLI = python tools/webrepl_cli.py
+CLI = python webrepl_cli.py
 
 .PHONY: put get ls repl deploy
 
 FILE := $(word 2, $(MAKECMDGOALS))
 
 default: deploy
-	$(CLI) -p $(PASS) $(HOST); 
-# 	@$(MAKE) repl
+# 	$(CLI) -p $(PASS) $(HOST); 
+# 	python webrepl_cli.py -p 1234 192.168.0.92 -e "blink()"
+
+# "import uasyncio as asyncio; [t.cancel() for t in asyncio.all_tasks(asyncio.get_event_loop())]; asyncio.get_event_loop().stop()"
+
+# 	python webrepl_cli.py -p 1234 192.168.0.92 -e "import uasyncio; uasyncio.get_event_loop().stop()"
+# 	python webrepl_cli.py -p 1234 192.168.0.92 -e "import machine; machine.reset()"
+
+r:
+	$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.reset()"
 
 put:
 	@if [ -z "$(FILE)" ]; then \
@@ -44,10 +52,13 @@ HASHFILE := .hashes.local
 DEPLOYIGNORE := .hashes.local .hashes.local.new Makefile .vscode
 
 deploy:
-	@find . -type f $(foreach f,$(DEPLOYIGNORE),! -name '$(f)') | while read f; do \
+	@find . \
+		$(foreach f,$(DEPLOYIGNORE),-path "./$(f)" -prune -o) \
+		-type f -print | while read f; do \
 		hash=$$(sha256sum "$$f" | cut -d' ' -f1); \
 		echo "$$hash $$f"; \
 	done > $(HASHFILE).new
+	
 	@while read line; do \
 		hash=$$(echo $$line | cut -d' ' -f1); \
 		file=$$(echo $$line | cut -d' ' -f2-); \
@@ -59,12 +70,3 @@ deploy:
 	done < $(HASHFILE).new
 	@mv $(HASHFILE).new $(HASHFILE)
 	@echo "✅ Deploy complete."
-
-
-
-attach:
-	@PORT=$$(ls /dev/ttyUSB* 2>/dev/null | head -n1); \
-	if [ -z "$$PORT" ]; then \
-		${usbipd} bind --busid 1-3 >/dev/null 2>&1; \
-		${usbipd} attach --wsl --busid 1-3 >/dev/null 2>&1 || true; \
-	fi

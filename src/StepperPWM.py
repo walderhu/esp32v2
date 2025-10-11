@@ -233,4 +233,5 @@ async def main():
     await asyncio.sleep(0.2)
     await motor2.move(distance_cm=50, freq=12_000)
 
+
 asyncio.run(main())

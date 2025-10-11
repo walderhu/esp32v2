@@ -25,8 +25,7 @@ def connect_wifi(ssid, password):
     return sta.ifconfig()[0]
 
 
-def send_telegram(message):
-    token, chat_id = config['telegram'].values()
+def send_telegram(message, token, chat_id):
     try:
         url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}"
         urequests.get(url).close()
@@ -43,16 +42,13 @@ def rm(path):
 def ls(): print(os.listdir())
 def reset(): machine.reset()
 
-# with open("config.json") as f: config = json.load(f)
-# ip = connect_wifi(*config['wifi_work'].values())
-# webrepl.start()
-
+with open("config.json") as f: config = json.load(f)
+ip = connect_wifi(*config['wifi_work'].values())
+send_telegram('Привет!', *config['telegram'].values())
+webrepl.start()
 blink()
 
 
-import asyncio
-import sys
-sys.path.append('/remote')
-# import main  # теперь возьмётся локальный файл
+
 
 
