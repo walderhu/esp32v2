@@ -1,3 +1,4 @@
+usbipd = "/mnt/c/Program Files/usbipd-win/usbipd.exe"
 HOST = 192.168.0.129
 PASS = 1234
 CLI = python tools/webrepl_cli.py
@@ -60,3 +61,10 @@ deploy:
 	@echo "✅ Deploy complete."
 
 
+
+attach:
+	@PORT=$$(ls /dev/ttyUSB* 2>/dev/null | head -n1); \
+	if [ -z "$$PORT" ]; then \
+		${usbipd} bind --busid 1-3 >/dev/null 2>&1; \
+		${usbipd} attach --wsl --busid 1-3 >/dev/null 2>&1 || true; \
+	fi

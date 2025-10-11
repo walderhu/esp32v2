@@ -5,9 +5,17 @@ import math
 
 
 class StepperPWMAsync:
-    def __init__(self, step_pin=14, dir_pin=15, en_pin=13,
-                 steps_per_rev=200, invert_dir=False, invert_enable=False, lead_mm=8):
+    def __init__(self, 
+                 step_pin=14, 
+                 dir_pin=15, 
+                 en_pin=13,
+                 steps_per_rev=200, 
+                 invert_dir=False, 
+                 invert_enable=False, 
+                 lead_mm=8, 
+                 ):
         self.step_pwm = PWM(Pin(step_pin))
+
         self.dir_pin = Pin(dir_pin, Pin.OUT)
         self.en_pin = Pin(en_pin, Pin.OUT) if en_pin is not None else None
 
@@ -68,15 +76,8 @@ class StepperPWMAsync:
         
         
     async def run(self, direction=1, freq=1000, duration=None):
-        """
-        Асинхронное вращение с поддержкой концевика:
-        - Если концевик уже сработал в выбранном направлении — меняем направление
-        - Во время движения: при срабатывании концевика — меняем направление
-        """
-        if not self.enabled:
-            self.enable(True)
+        if not self.enabled: self.enable(True)
 
-        # Проверка концевика перед стартом
         if direction == 0 and self.sw_pin.value() == 1:
             direction = 1
         elif direction == 1 and self.sw_pin.value() == 1:
@@ -179,90 +180,62 @@ class StepperPWMAsync:
         import gc; gc.collect()
 
 
-    # async def move_mm_accel(self, distance_mm, max_freq=1000):
-    #     """
-    #     Перемещение с косинусным ускорением и торможением через PWM
-    #     - 10% пути на разгон
-    #     - 80% на постоянной max_freq
-    #     - 10% на торможение
-    #     """
-    #     steps = int(abs(distance_mm) * self.steps_per_rev / self.lead_mm)
-    #     self.dir_pin.value(1 if distance_mm > 0 else 0)
-    #     self.enable(True)
+    async def move_mm_accel_pwm(self, distance_mm=None, max_freq=20000, 
+                            min_freq=5000, accel_ratio=0.2, distance_cm=None):
+        """Перемещение с плавным ускорением/торможением (через PWM)"""
+        if distance_mm is None and distance_cm is None: 
+            raise ValueError("Укажите distance_mm или distance_cm")
+        if distance_mm is None: distance_mm = distance_cm * 10
+        
+        direction = 1 if distance_mm > 0 else 0
+        self.dir_pin.value(direction ^ self.invert_dir)
+        self.enable(True)
 
-    #     self.step_pwm.duty_u16(32768)  # PWM включён постоянно
+        steps_total = abs(distance_mm) * self.steps_per_rev / self.lead_mm
+        accel_steps = max(1, int(steps_total * accel_ratio)) # 20% ускорение, 20% торможение
+        decel_start = steps_total - accel_steps
 
-    #     accel_steps = max(1, steps // 10)
-    #     decel_start = steps - accel_steps
+        self.step_pwm.duty_u16(32768)
+        self.running = True
 
-    #     for i in range(steps):
-    #         if i < accel_steps:
-    #             ratio = i / accel_steps
-    #             freq = max_freq * (1 - math.cos(math.pi / 2 * ratio))  # разгон
-    #         elif i >= decel_start:
-    #             ratio = (i - decel_start) / accel_steps
-    #             freq = max_freq * math.cos(math.pi / 2 * ratio)        # торможение
-    #         else:
-    #             freq = max_freq
+        steps_done = 0; dt = 0.005  # шаг по времени ~5 мс
 
-    #         freq = max(1, freq)
-    #         self.step_pwm.freq(int(freq))  # меняем частоту PWM прямо на лету
+        while steps_done < steps_total and self.running:
+            if steps_done < accel_steps:  # ускорение
+                ratio = steps_done / accel_steps
+                freq = min_freq + (max_freq - min_freq) * ratio
+            elif steps_done > decel_start:  # торможение
+                ratio = (steps_total - steps_done) / accel_steps
+                freq = min_freq + (max_freq - min_freq) * max(0, ratio)
+            else:
+                freq = max_freq
 
-    #         # маленькая пауза, чтобы цикл asyncio не заблокировал
-    #         await asyncio.sleep_ms(1)
+            freq = max(min_freq, min(freq, max_freq))
+            self.step_pwm.freq(int(freq))
+            steps_done += freq * dt * 2
 
+            # print(f'{steps_done/steps_total*100:.1f}% done')
+            # print(f'Curr dist <cm> = {steps_done * self.lead_mm / self.steps_per_rev / 10}')
+            await asyncio.sleep(dt)
 
+        self.stop()
+        await asyncio.sleep(0.1)
+        self.running = False
 
-async def move_mm_accel(self, distance_mm, max_freq=1000):
-    """
-    Точный путь с косинусным ускорением и торможением.
-    Каждый шаг считается вручную, чтобы пройденная дистанция = distance_mm
-    """
-    steps = int(abs(distance_mm) * self.steps_per_rev / self.lead_mm)
-    self.dir_pin.value(1 if distance_mm > 0 else 0)
-    self.enable(True)
-
-    accel_steps = max(1, steps // 10)
-    decel_start = steps - accel_steps
-
-    for i in range(steps):
-        # Косинусное ускорение/торможение
-        if i < accel_steps:
-            ratio = i / accel_steps
-            freq = max_freq * (1 - math.cos(math.pi / 2 * ratio))
-        elif i >= decel_start:
-            ratio = (i - decel_start) / accel_steps
-            freq = max_freq * math.cos(math.pi / 2 * ratio)
-        else:
-            freq = max_freq
-
-        freq = max(1, freq)
-        delay = 1 / freq / 2  # делим на 2, потому что на HIGH и LOW
-
-        # делаем один шаг вручную
-        self.step_pwm.duty_u16(32768)  # поднять step
-        await asyncio.sleep(delay)
-        self.step_pwm.duty_u16(0)      # опустить step
-        await asyncio.sleep(delay)
-    
 
 # ---------------------- Точка входа ----------------------
 import uasyncio as asyncio
 
 async def main():
-    async with StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, lead_mm=2.5) as motor:
-        await motor.home(freq=12_000)
+    Ox = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, lead_mm=2.5)
+    Oy = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, lead_mm=2.5)
+
+    async with Oy:
+        await Oy.home(freq=10_000) # await Ox.home(freq=10_000)
         
-    
-async def test():
-    
-    motor = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, lead_mm=2.5)
-    motor.enable(True)
+        await asyncio.gather( # одновременно двигаем Oy и Ox
+            Oy.move_mm_accel_pwm(distance_cm=60, max_freq=40_000, min_freq=3000, accel_ratio=0.3),
+            # Ox.move_mm_accel_pwm(distance_cm=10, max_freq=5_000, min_freq=3000, accel_ratio=0.3)
+            )
 
-    try:    
-        await motor.home(freq=12_000)
-        await motor.move_mm(distance_mm=60 * 10, freq=12_000) # 60l
-    finally:
-        motor.cleanup()
-
-asyncio.run(test())
+asyncio.run(main())
