@@ -1,9 +1,16 @@
 #!/usr/bin/env python
-# webrepl_cli.py
+# cli.py (merged with webrepl_cli.py functionality)
+"""
+Непротестированный файл 
+Попытка объединить cli.py with webrepl_cli.py 
+надо тестировать
+"""
 from __future__ import print_function
 import sys
 import os
 import struct
+import time
+import select
 
 try: import usocket as socket
 except ImportError: import socket
@@ -117,7 +124,7 @@ def get_ver(ws):
 
 
 def do_repl(ws):
-    import termios, select
+    import termios
 
     class ConsolePosix:
         def __init__(self):
@@ -238,11 +245,13 @@ def help(rc=0):
     print("  [-p password] <host>                            - Access the remote REPL")
     print("  [-p password] <host>:<remote_file> <local_file> - Copy remote file to local file")
     print("  [-p password] <local_file> <host>:<remote_file> - Copy local file to remote file")
+    print("  [-p password] <host> -e <code>                  - Execute code on remote")
     print("Examples:")
     print("  %s 192.168.4.1" % exename)
     print("  %s script.py 192.168.4.1:/another_name.py" % exename)
     print("  %s script.py 192.168.4.1:/app/" % exename)
     print("  %s -p password 192.168.4.1:/app/script.py ." % exename)
+    print("  %s -p password 192.168.4.1 -e 'print(\"Hello\")'" % exename)
     sys.exit(rc)
 
 def error(msg):
@@ -282,27 +291,6 @@ Sec-WebSocket-Key: foo\r
 #        sys.stdout.write(l)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def exec_code(ws, code, done_marker="<<<WEBREPL_DONE>>>", idle_timeout=0.4):
     """
     Отправить код в REPL и дождаться маркера завершения или таймаута.
@@ -316,8 +304,6 @@ def exec_code(ws, code, done_marker="<<<WEBREPL_DONE>>>", idle_timeout=0.4):
         print("[sent reset, not waiting for output]")
         return
     
-    import select, time, sys
-
     # Формируем payload: код + принт-маркер на новой строке
     # Используем '\r' для WebREPL (аналог Enter)
     payload = code + "\rprint(%r)\r" % done_marker
@@ -376,31 +362,6 @@ def exec_code(ws, code, done_marker="<<<WEBREPL_DONE>>>", idle_timeout=0.4):
         except Exception:
             sys.stdout.write(buf.decode('utf-8', 'replace'))
             sys.stdout.flush()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def main():
