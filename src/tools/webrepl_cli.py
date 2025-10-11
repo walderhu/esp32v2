@@ -281,70 +281,202 @@ Sec-WebSocket-Key: foo\r
 #        sys.stdout.write(l)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def exec_code(ws, code, done_marker="<<<WEBREPL_DONE>>>", idle_timeout=0.4):
+    """
+    Отправить код в REPL и дождаться маркера завершения или таймаута.
+    - code: строка с кодом (одна или несколько команд, разделенных \n или ;)
+    - done_marker: уникальная строка, которую мы печатаем в конце для обнаружения конца вывода
+    - idle_timeout: секунды бездействия для выхода, если маркер не пришёл
+    """
+    
+    if "machine.reset" in code:
+        ws.write(code.encode('utf-8') + b'\r', WEBREPL_FRAME_TXT)
+        print("[sent reset, not waiting for output]")
+        return
+    
+    import select, time, sys
+
+    # Формируем payload: код + принт-маркер на новой строке
+    # Используем '\r' для WebREPL (аналог Enter)
+    payload = code + "\rprint(%r)\r" % done_marker
+
+    # Отправляем как текстовую рамку
+    ws.write(payload.encode("utf-8"), WEBREPL_FRAME_TXT)
+
+    # Небольшая пауза, чтобы устройство начало отдачу (опционально)
+    start = time.time()
+    last_recv = start
+    buf = b""
+    marker_bytes = done_marker.encode("utf-8")
+
+    sock = ws.s
+
+    try:
+        while True:
+            # ждем на сокете с таймаутом idle_timeout
+            r, _, _ = select.select([sock], [], [], idle_timeout)
+            if not r: break # отсутствие данных в течение timeout -> считаем конец вывода
+
+            # читаем по одному байту (read(1, text_ok=True) как в do_repl)
+            try: b = ws.read(1, text_ok=True)
+            except AssertionError: break # неожиданный конец вебсокета / данных
+            if not b: break # ничего не пришло — выйдем
+
+            buf += b
+            last_recv = time.time()
+
+            # если в буфере нашли маркер — выводим всё до маркера и выходим
+            if marker_bytes in buf:
+                # вырезаем часть до маркера
+                idx = buf.find(marker_bytes)
+                out = buf[:idx]
+                # печатаем и возвращаем
+                try:
+                    # Печатаем как raw bytes (учитывая, что буфер может содержать ASCII/utf-8)
+                    sys.stdout.buffer.write(out)
+                    sys.stdout.buffer.flush()
+                except Exception:
+                    # fallback для окружений без buffer
+                    sys.stdout.write(out.decode('utf-8', 'replace'))
+                    sys.stdout.flush()
+                return
+
+            # небольшая защита: если цикл слишком долгий, выйдем по общему таймаут
+            if time.time() - start > 30: break
+
+    except KeyboardInterrupt: pass # если прервали, аккуратно выйдем
+
+    # Если дошли сюда — либо таймаут, либо прерывание, печатаем что пришло
+    if buf:
+        try:
+            sys.stdout.buffer.write(buf)
+            sys.stdout.buffer.flush()
+        except Exception:
+            sys.stdout.write(buf.decode('utf-8', 'replace'))
+            sys.stdout.flush()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def main():
     passwd = None
-    for i in range(len(sys.argv)):
+    code_to_exec = None
+    i = 1
+    # Разбор аргументов -p и -e
+    while i < len(sys.argv):
         if sys.argv[i] == '-p':
             sys.argv.pop(i)
             passwd = sys.argv.pop(i)
-            break
+            continue
+        if sys.argv[i] == '-e':
+            sys.argv.pop(i)
+            code_to_exec = sys.argv.pop(i)
+            continue
+        i += 1
 
-    if len(sys.argv) not in (2, 3):
+    # Если не указан код и нет хоста, показать help
+    if len(sys.argv) < 2 and not code_to_exec:
         help(1)
+
+    # Определяем host и port
+    host, port, _ = parse_remote(sys.argv[1] + ":")
 
     if passwd is None:
         import getpass
         passwd = getpass.getpass()
 
-    if len(sys.argv) > 2:
-        if ":" in sys.argv[1] and ":" in sys.argv[2]:
-            error("Operations on 2 remote files are not supported")
-        if ":" not in sys.argv[1] and ":" not in sys.argv[2]:
-            error("One remote file is required")
-
-    if len(sys.argv) == 2:
+    # Определяем тип операции
+    if code_to_exec:
+        op = "exec"
+    elif len(sys.argv) == 2:
         op = "repl"
-        host, port, _ = parse_remote(sys.argv[1] + ":")
     elif ":" in sys.argv[1]:
         op = "get"
-        host, port, src_file = parse_remote(sys.argv[1])
+        src_file = parse_remote(sys.argv[1])[2]
         dst_file = sys.argv[2]
         if os.path.isdir(dst_file):
             basename = src_file.rsplit("/", 1)[-1]
             dst_file += "/" + basename
     else:
         op = "put"
-        host, port, dst_file = parse_remote(sys.argv[2])
+        dst_file = parse_remote(sys.argv[2])[2]
         src_file = sys.argv[1]
         if dst_file[-1] == "/":
             basename = src_file.rsplit("/", 1)[-1]
             dst_file += basename
 
-    if True:
-        print("op:%s, host:%s, port:%d, passwd:%s." % (op, host, port, passwd))
-        if op in ("get", "put"):
-            print(src_file, "->", dst_file)
+    print("op:%s, host:%s, port:%d, passwd:%s." % (op, host, port, passwd))
+    if op in ("get", "put"):
+        print(src_file, "->", dst_file)
 
+    # Подключаемся к сокету
     s = socket.socket()
-
     ai = socket.getaddrinfo(host, port)
     addr = ai[0][4]
-
     s.connect(addr)
-    #s = s.makefile("rwb")
     client_handshake(s)
 
     ws = websocket(s)
-
     login(ws, passwd)
     print("Remote WebREPL version:", get_ver(ws))
 
-    # Set websocket to send data marked as "binary"
+    # Установим бинарный режим
     ws.ioctl(9, 2)
 
-    if op == "repl": do_repl(ws)
-    elif op == "get": get_file(ws, dst_file, src_file)
-    elif op == "put": put_file(ws, src_file, dst_file)
+    # Выполняем операцию
+    if code_to_exec:
+        exec_code(ws, code_to_exec)
+    elif op == "repl":
+        do_repl(ws)
+    elif op == "get":
+        get_file(ws, dst_file, src_file)
+    elif op == "put":
+        put_file(ws, src_file, dst_file)
+
     s.close()
 
 
