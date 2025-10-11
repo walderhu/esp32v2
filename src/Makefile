@@ -7,14 +7,17 @@ CLI = python webrepl_cli.py
 
 FILE := $(word 2, $(MAKECMDGOALS))
 
+
 default: deploy
-# 	$(CLI) -p $(PASS) $(HOST); 
+	$(CLI) -p $(PASS) $(HOST); 
+
 # 	python webrepl_cli.py -p 1234 192.168.0.92 -e "blink()"
-
-# "import uasyncio as asyncio; [t.cancel() for t in asyncio.all_tasks(asyncio.get_event_loop())]; asyncio.get_event_loop().stop()"
-
+#   python webrepl_cli.py -p 1234 192.168.0.92 -e "import uasyncio as asyncio; [t.cancel() for t in asyncio.all_tasks(asyncio.get_event_loop())]; asyncio.get_event_loop().stop()"
 # 	python webrepl_cli.py -p 1234 192.168.0.92 -e "import uasyncio; uasyncio.get_event_loop().stop()"
-# 	python webrepl_cli.py -p 1234 192.168.0.92 -e "import machine; machine.reset()"
+
+
+run: deploy
+	$(CLI) -p $(PASS) $(HOST) -e "import uasyncio as asyncio, StepperPWM; asyncio.run(StepperPWM.main())"
 
 r:
 	$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.reset()"

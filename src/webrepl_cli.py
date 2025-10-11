@@ -309,6 +309,12 @@ def exec_code(ws, code, done_marker="<<<WEBREPL_DONE>>>", idle_timeout=0.4):
     - done_marker: уникальная строка, которую мы печатаем в конце для обнаружения конца вывода
     - idle_timeout: секунды бездействия для выхода, если маркер не пришёл
     """
+    
+    if "machine.reset" in code:
+        ws.write(code.encode('utf-8') + b'\r', WEBREPL_FRAME_TXT)
+        print("[sent reset, not waiting for output]")
+        return
+    
     import select, time, sys
 
     # Формируем payload: код + принт-маркер на новой строке

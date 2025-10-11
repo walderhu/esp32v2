@@ -33,6 +33,22 @@ def send_telegram(message, token, chat_id):
     except Exception as e:
         print("Failed to send Telegram message:", e)
         
+        
+def dd(message, token, chat_id, delay=5):
+    try:
+        url_send = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}"
+        response = urequests.get(url_send)
+        result = response.json()
+        response.close()
+        message_id = result["result"]["message_id"]
+        print("Telegram message sent!")
+        time.sleep(delay)
+        url_delete = f"https://api.telegram.org/bot{token}/deleteMessage?chat_id={chat_id}&message_id={message_id}"
+        urequests.get(url_delete).close()
+        print("Telegram message deleted!")
+    except Exception as e:
+        print("Failed:", e)
+        
 def rm(path):
     if not os.path.exists(path): return
     if os.path.isfile(path): os.remove(path)
@@ -44,10 +60,9 @@ def reset(): machine.reset()
 
 with open("config.json") as f: config = json.load(f)
 ip = connect_wifi(*config['wifi_work'].values())
-send_telegram('Привет!', *config['telegram'].values())
+dd('Плата запущена!', *config['telegram'].values(), delay=0.5)
 webrepl.start()
 blink()
-
 
 
 
