@@ -98,18 +98,14 @@ class StepperPWMAsync:
         try:
             while self.running:
                 sw_state = self.sw_pin.value()
-
-                # Если движемся к концевику и он сработал — меняем направление
                 if sw_state == 1:
                     self.current_dir ^= 1
                     self.dir_pin.value(self.current_dir ^ self.invert_dir)
                     await asyncio.sleep_ms(200)  # защита от дребезга
                     self.step_pwm.duty_u16(32768)  # снова включаем шаги
 
-                # Проверка по времени
                 if stop_time and time.ticks_diff(time.ticks_ms(), stop_time) >= 0:
-                    self.stop()
-                    break
+                    self.stop(); break # Проверка по времени
 
                 await asyncio.sleep_ms(5)
         finally:
@@ -209,6 +205,8 @@ class StepperPWMAsync:
             self.step_pwm.freq(int(freq) + self.id)
             steps_done += freq * dt * 2
             await asyncio.sleep(dt)
+            
+            # self.position_steps += (1 if direction else -1) * freq * dt * 2 # надо тестить
 
         self.stop()
         await asyncio.sleep(0.1)

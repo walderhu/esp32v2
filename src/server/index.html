@@ -1,0 +1,164 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Joystick</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f3f3f3;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .pad {
+            width: 260px;
+            height: 260px;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 18px;
+        }
+
+        .sp {
+            background: transparent;
+        }
+
+        button.dir {
+            border: 0;
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 18px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.1s;
+        }
+
+        button.dir:active,
+        button.dir.pressed {
+            background: #cce5ff;
+        }
+
+        .up {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .left {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .right {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        .down {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        .lbl {
+            text-align: center;
+            margin-top: 12px;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="pad">
+            <div class="sp"></div>
+            <button class="dir up" data-dir="up">▲</button>
+            <div class="sp"></div>
+            <button class="dir left" data-dir="left">◀</button>
+            <div class="sp"></div>
+            <button class="dir right" data-dir="right">▶</button>
+            <div class="sp"></div>
+            <button class="dir down" data-dir="down">▼</button>
+            <div class="sp"></div>
+        </div>
+        <!-- <div class="lbl">Нажмите/удерживайте кнопку. Сервер выведет действие в консоль.</div> -->
+    </div>
+
+    <script>
+        const sendPress = (dir, action = "press") => {
+            fetch('/press', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dir, action })
+            }).catch(e => console.error('Ошибка отправки:', e));
+
+            const btn = document.querySelector('button.dir.' + dir);
+            if (btn) {
+                if (action === 'press') btn.classList.add('pressed');
+                else btn.classList.remove('pressed');
+            }
+        };
+
+        document.querySelectorAll('button.dir').forEach(btn => {
+            const dir = btn.dataset.dir;
+            let isPressed = false;
+
+            const press = () => {
+                if (!isPressed) {
+                    sendPress(dir, 'press');
+                    isPressed = true;
+                }
+            };
+            const release = () => {
+                if (isPressed) {
+                    sendPress(dir, 'release');
+                    isPressed = false;
+                }
+            };
+
+            btn.addEventListener('mousedown', press);
+            btn.addEventListener('mouseup', release);
+            btn.addEventListener('mouseleave', release);
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); press(); }, { passive: false });
+            btn.addEventListener('touchend', release);
+        });
+
+        const keyMap = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+        const keysPressed = {};
+
+        window.addEventListener('keydown', (ev) => {
+            const dir = keyMap[ev.key];
+            if (dir && !keysPressed[dir]) {
+                sendPress(dir, 'press');
+                keysPressed[dir] = true;
+            }
+        });
+        window.addEventListener('keyup', (ev) => {
+            const dir = keyMap[ev.key];
+            if (dir && keysPressed[dir]) {
+                sendPress(dir, 'release');
+                keysPressed[dir] = false;
+            }
+        });
+    </script>
+</body>
+
+</html>
