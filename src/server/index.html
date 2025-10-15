@@ -1,10 +1,11 @@
+<!-- index.html -->
 <!doctype html>
 <html>
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Joystick</title>
+    <title>Joystick Control</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 
@@ -15,35 +16,70 @@
                 <img src="misc/home.svg" alt="home" />
             </button>
 
-
             <div class="sp"></div>
             <button class="dir up" data-dir="up">▲</button>
             <div class="sp"></div>
 
             <button class="dir left" data-dir="left">◀</button>
 
-
             <button class="dir stop" data-dir="stop">
                 <img src="misc/stop.svg" alt="Stop" width="32" height="32" />
             </button>
-
 
             <button class="dir right" data-dir="right">▶</button>
 
             <div class="sp"></div>
             <button class="dir down" data-dir="down">▼</button>
             <div class="sp"></div>
+        </div>
 
+        <!-- Controls Section -->
+        <div class="controls">
+            <!-- Scale Buttons (without label) -->
+            <div class="scale-row">
+                <button class="scale-btn" data-scale="0.1">0.1</button>
+                <button class="scale-btn" data-scale="1">1</button>
+                <button class="scale-btn" data-scale="10">10</button>
+                <button class="scale-btn" data-scale="25">25</button>
+                <button class="scale-btn selected" data-scale="50">50</button>
+                <button class="scale-btn" data-scale="100">100</button>
+            </div>
 
+            <!-- Coordinates and Speed Columns -->
+            <div class="columns-row">
+                <div class="column">
+                    <div class="coord-input">
+                        <label><span class="axis">X:</span> <span class="meta">[0.00]</span></label>
+                        <input type="number" id="xInput" value="52.91" step="0.01">
+                        <span class="unit">мм</span>
+                    </div>
+                    <div class="speed-input">
+                        <label><span class="axis">Скорость</span></label>
+                        <input type="number" id="speed" value="10" step="1">
+                        <span class="unit">мм</span>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="coord-input">
+                        <label><span class="axis">Y:</span> <span class="meta">[0.00]</span></label>
+                        <input type="number" id="yInput" value="62.03" step="0.01">
+                        <span class="unit">мм</span>
+                    </div>
+                    <div class="speed-input">
+                        <label><span class="axis">Длина шага</span></label>
+                        <input type="number" id="stepLength" value="5" step="0.1">
+                        <span class="unit">мм</span>
+                    </div>
+                </div>
+            </div>
 
-
-
-
-
+            <!-- Zero Button -->
+            <button id="zeroBtn" class="zero-btn">Применить</button>
         </div>
     </div>
 
     <script>
+        // Existing joystick script
         const sendPress = (dir, action = "press") => {
             fetch('/press', {
                 method: 'POST',
@@ -106,6 +142,42 @@
                 keysPressed[dir] = false;
             }
         });
+
+        // New controls script
+        document.querySelectorAll('.scale-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                // TODO: Send scale to server
+                console.log('Scale changed to:', btn.dataset.scale);
+            });
+        });
+
+        // Make coordinates editable - send on change
+        document.getElementById('xInput').addEventListener('change', (e) => {
+            // TODO: Send new X coord to server
+            console.log('New X:', e.target.value);
+        });
+        document.getElementById('yInput').addEventListener('change', (e) => {
+            // TODO: Send new Y coord to server
+            console.log('New Y:', e.target.value);
+        });
+
+        document.getElementById('zeroBtn').addEventListener('click', () => {
+            // TODO: Apply/Zero coordinates
+            document.getElementById('xInput').value = '0.00';
+            document.getElementById('yInput').value = '0.00';
+            console.log('Applied/Zeroed coordinates');
+        });
+
+        // Simulate real-time updates (placeholder)
+        setInterval(() => {
+            // Mock updates - in real, fetch from server
+            const x = parseFloat(document.getElementById('xInput').value) + (Math.random() - 0.5) * 0.1;
+            const y = parseFloat(document.getElementById('yInput').value) + (Math.random() - 0.5) * 0.1;
+            document.getElementById('xInput').value = x.toFixed(2);
+            document.getElementById('yInput').value = y.toFixed(2);
+        }, 1000);
     </script>
 </body>
 
