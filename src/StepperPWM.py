@@ -219,7 +219,7 @@ import uasyncio as asyncio
 motor1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, lead_mm=2.5)
 motor2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, lead_mm=2.5)
 
-async def main():
+async def test():
     try:
         async with motor1, motor2:
             await motor1.home(freq=12_000)
@@ -242,42 +242,10 @@ async def main():
         motor1.enable(False); motor2.enable(False)
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    asyncio.run(test())
 
 
 
 
 
 
-# exit()
-# #####
-# import uasyncio as asyncio
-# from StepperPWM import StepperPWMAsync
-# motor1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, lead_mm=2.5)
-# motor2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, lead_mm=2.5)
-# loop = asyncio.get_event_loop()
-
-
-# loop.create_task(motor1.move_accel(distance_cm=60, max_freq=40_000, accel_ratio=0.3))
-# loop.run_forever()
-# exit()
-
-# loop = asyncio.get_event_loop()
-
-# async def loop_runner(): 
-#     while True: await asyncio.sleep(0)
-    
-
-# t=loop.create_task(motor1.home(freq=12_000))
-
-# loop.create_task(loop_runner())
-# loop.create_task(motor1.move_accel(distance_cm=60, max_freq=40_000, accel_ratio=0.3))
-# # await motor1.move_accel(distance_cm=30, max_freq=20000)
-
-# # тест
-
-# asyncio.run(motor1.move_accel(distance_cm=60, max_freq=40_000))
-# asyncio.run(motor1.move(distance_cm=10, freq=12_000))
-
-
-# # python tools/webrepl_cli.py -p 1234 192.168.0.92 -e "asyncio.run(motor1.move_accel(distance_cm=30, max_freq=40_000))"

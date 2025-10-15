@@ -9,7 +9,7 @@ all:
 
 clean:
 	@echo "🔹 Освобождаем порт 8081..."
-	@fuser -k 8081/tcp || true
+	fuser -k 8081/tcp || true
 	@sleep 1
 
 # test:

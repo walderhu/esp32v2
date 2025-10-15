@@ -152,7 +152,7 @@ def do_repl(ws):
         def write(self, buf):
             self.outfile.write(buf)
 
-    print("Use Ctrl-] to exit this shell")
+    # print("Use Ctrl-] to exit this shell") #!
     console = ConsolePosix()
     console.enter()
     try:
@@ -199,7 +199,7 @@ def put_file(ws, local_file, remote_file):
                 break
             ws.write(buf)
             cnt += len(buf)
-    print()
+    # print() #!
     assert read_resp(ws) == 0
 
 def get_file(ws, local_file, remote_file):
@@ -224,7 +224,7 @@ def get_file(ws, local_file, remote_file):
                 sz -= len(buf)
                 sys.stdout.write("Received %d bytes\r" % cnt)
                 sys.stdout.flush()
-    print()
+    # print() #!
     assert read_resp(ws) == 0
 
 
@@ -322,7 +322,7 @@ def main():
             dst_file += basename
 
     if True:
-        print("op:%s, host:%s, port:%d, passwd:%s." % (op, host, port, passwd))
+        # print("op:%s, host:%s, port:%d, passwd:%s." % (op, host, port, passwd)) #!
         if op in ("get", "put"):
             print(src_file, "->", dst_file)
 
@@ -338,7 +338,7 @@ def main():
     ws = websocket(s)
 
     login(ws, passwd)
-    print("Remote WebREPL version:", get_ver(ws))
+    # print("Remote WebREPL version:", get_ver(ws)) #!
 
     # Set websocket to send data marked as "binary"
     ws.ioctl(9, 2)
