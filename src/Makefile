@@ -67,12 +67,7 @@ DEPLOYIGNORE := .hash.local .hash.local.new Makefile .vscode .gitignore .git tra
 DEPLOYIGNORE_FIND_EXCLUDE := $(foreach f,$(DEPLOYIGNORE),-name $(f) -o) -false
 
 deploy:
-# 	@echo "▶ Запускаем сервер..."
 	@find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type f -print | while read f; do \
-		if [ -d "$$f" ]; then \
-			echo "mkdir /$$f on device"; \
-			$(CLI) -p $(PASS) $(HOST) -e "import os; os.mkdir('$$f')"; \
-		fi; \
 		hash=$$(sha256sum "$$f" | cut -d' ' -f1); \
 		echo "$$hash $$f"; \
 	done > $(HASHFILE).new
@@ -106,4 +101,17 @@ clean-esp: clean
 	mpremote ls
 
 tree:
+	@$(CLI) -p $(PASS) $(HOST) -e "tree()"
+
+
+rm:
+	@if [ -f $(HASHFILE) ]; then \
+		grep -v "/$(FILE)" $(HASHFILE) > $(HASHFILE).tmp && mv $(HASHFILE).tmp $(HASHFILE); \
+	fi
+	@$(CLI) -p $(PASS) $(HOST) -e 'rm("$(FILE)")'
+	@$(MAKE) --no-print-directory tree
+
+
+test:
+	$(CLI) -p $(PASS) $(HOST) -e "safe_mkdir('tools')"; 
 	@$(CLI) -p $(PASS) $(HOST) -e "tree()"

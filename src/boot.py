@@ -50,14 +50,19 @@ def dd(message, token, chat_id, delay=5):
     except Exception as e:
         print("Failed:", e)
         
+
 def rm(path):
-    if not os.path.exists(path): return
-    if os.path.isfile(path): os.remove(path)
-    elif os.path.isdir(path):
-        for name in os.listdir(path): rm(f'{path}/{name}')  
-        os.rmdir(path)
-def ls(): print(os.listdir())
+    try:
+        if os.stat(path)[0] & 0xF000 != 0x4000: os.remove(path)
+        else:
+            for f in os.listdir(path): rm(path + '/' + f)
+            os.rmdir(path)
+    except OSError: pass
+    
+        
+def ls(): print(' '.join(os.listdir()))
 def reset(): machine.reset()
+
 
 
 def tree(path='.', prefix=''):
@@ -66,13 +71,22 @@ def tree(path='.', prefix=''):
     for index, name in enumerate(entries):
         full_path = path + '/' + name
         connector = '└── ' if index == entries_count - 1 else '├── '
-        print(prefix + connector + name)
-        try:
-            if os.stat(full_path)[0] & 0x4000:  # директория
-                extension = '    ' if index == entries_count - 1 else '│   '
-                tree(full_path, prefix + extension)
-        except Exception: pass
 
+        try: isdir = os.stat(full_path)[0] & 0x4000
+        except Exception: pass
+        
+        postfix = '/' if isdir else ''
+        print(prefix + connector + name + postfix)
+        if isdir:  # директория
+            extension = '    ' if index == entries_count - 1 else '│   '
+            tree(full_path, prefix + extension)
+
+
+def safe_mkdir(path):
+    try: os.mkdir(path)
+    except OSError: pass 
+
+    
 with open("config.json") as f: config = json.load(f)
 ip = connect_wifi(*config['wifi_work'].values())
 # dd('Плата запущена!', *config['telegram'].values(), delay=0.5)
@@ -81,8 +95,3 @@ webrepl.start()
 blink()
 
 
-
-import os; os.mkdir('dir')
-
-
-os.makedirs('dir', exist_ok=True)
