@@ -61,9 +61,9 @@ def reset(): machine.reset()
 with open("config.json") as f: config = json.load(f)
 ip = connect_wifi(*config['wifi_work'].values())
 # dd('Плата запущена!', *config['telegram'].values(), delay=0.5)
+dd(f'Плата запущена!, {ip=}', *config['telegram'].values(), delay=0.5)
 webrepl.start()
 blink()
-
 
 
 

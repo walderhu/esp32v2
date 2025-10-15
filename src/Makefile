@@ -10,11 +10,12 @@ FILE := $(word 2, $(MAKECMDGOALS))
 default: 
 	$(CLI) -p $(PASS) $(HOST); 
 # 	$(CLI) -p $(PASS) $(HOST) -e "import uasyncio as asyncio, StepperPWM; asyncio.run(StepperPWM.main())"
-
-# 	python webrepl_cli.py -p 1234 192.168.0.92 -e "blink()"
 #   python webrepl_cli.py -p 1234 192.168.0.92 -e "import uasyncio as asyncio; [t.cancel() for t in asyncio.all_tasks(asyncio.get_event_loop())]; asyncio.get_event_loop().stop()"
 # 	python webrepl_cli.py -p 1234 192.168.0.92 -e "import uasyncio; uasyncio.get_event_loop().stop()"
 
+
+blink:
+	$(CLI) -p $(PASS) $(HOST) -e "blink()"
 
 repl: deploy
 	$(CLI) -p $(PASS) $(HOST); 
@@ -38,43 +39,6 @@ get:
 	@echo "⬇️  Downloading $(FILE) ..."
 	@$(CLI) $(HOST):/$(FILE) ./$(FILE) -p $(PASS)
 
-# repl:
-# 	@echo "🔌 Connecting to REPL..."
-# 	@bash -c '\
-# 	while true; do \
-# 		echo "🔄  Deploying files before REPL..."; \
-# 		$(MAKE) deploy; \
-# 		echo "🔌 Connecting to REPL..."; \
-# 		$(CLI) -p $(PASS) $(HOST) || true; \
-# 		sleep 0.5; \
-# 	done'
-
-
-
-HASHFILE := .hashes.local
-DEPLOYIGNORE := .hashes.local .hashes.local.new Makefile .vscode
-
-# deploy:
-# 	@find . \
-# 		$(foreach f,$(DEPLOYIGNORE),-path "./$(f)" -prune -o) \
-# 		-type f -print | while read f; do \
-# 		hash=$$(sha256sum "$$f" | cut -d' ' -f1); \
-# 		echo "$$hash $$f"; \
-# 	done > $(HASHFILE).new
-	
-# 	@while read line; do \
-# 		hash=$$(echo $$line | cut -d' ' -f1); \
-# 		file=$$(echo $$line | cut -d' ' -f2-); \
-# 		old_hash=$$(grep -F "$$file" $(HASHFILE) 2>/dev/null | cut -d' ' -f1); \
-# 		if [ "$$hash" != "$$old_hash" ]; then \
-# 			echo "➡️  Uploading $$file -> /$$file ..."; \
-# 			$(CLI) $$file $(HOST):/$$file -p $(PASS) > /dev/null 2>&1; \
-# 		fi; \
-# 	done < $(HASHFILE).new
-# 	@mv $(HASHFILE).new $(HASHFILE)
-# 	@echo "✅ Deploy complete."
-
-
 
 HASHFILE := .hashes.local
 DEPLOYIGNORE := .hashes.local .hashes.local.new Makefile .vscode
@@ -97,10 +61,11 @@ deploy:
 	@echo "✅ Deploy complete."
 
 
-
-
-
 gg: deploy
 	$(CLI) -p $(PASS) $(HOST) -e "import uasyncio as asyncio, StepperPWM; asyncio.run(StepperPWM.main())"
 # 	$(CLI) -p $(PASS) $(HOST);
 	$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()"
+
+
+clean:
+	@rm -rf .hashes.local.new .hashes.local
