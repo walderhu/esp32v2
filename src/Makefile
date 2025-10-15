@@ -1,5 +1,6 @@
 usbipd = "/mnt/c/Program Files/usbipd-win/usbipd.exe"
-HOST = 192.168.0.92
+# HOST = 192.168.0.92
+HOST = 192.168.0.129
 PASS = 1234
 CLI = python tools/webrepl_cli.py
 
@@ -42,10 +43,11 @@ get:
 
 
 HASHFILE := .hash.local
-# DEPLOYIGNORE := .hash.local .hash.local.new Makefile .vscode .gitignore
+DEPLOYIGNORE := .hash.local .hash.local.new Makefile .vscode .gitignore .git trash server
+DEPLOYIGNORE_FIND_EXCLUDE := $(foreach f,$(DEPLOYIGNORE),-name $(f) -o) -false
 
 # deploy:
-# 	@find . -type f $(foreach f,$(DEPLOYIGNORE),! -name '$(f)') | while read f; do \
+# 	@find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type f -print | while read f; do \
 # 		hash=$$(sha256sum "$$f" | cut -d' ' -f1); \
 # 		echo "$$hash $$f"; \
 # 	done > $(HASHFILE).new
@@ -54,35 +56,36 @@ HASHFILE := .hash.local
 # 		file=$$(echo $$line | cut -d' ' -f2-); \
 # 		old_hash=$$(grep -F "$$file" $(HASHFILE) 2>/dev/null | cut -d' ' -f1); \
 # 		if [ "$$hash" != "$$old_hash" ]; then \
-# 			echo "➡️  Uploading $$file -> /$$file ..."; \
+# 			echo "➡️  Uploading $$file -> /$$file ..."; \
 # 			python tools/cli.py $$file $(HOST):/$$file -p $(PASS) > /dev/null 2>&1; \
 # 		fi; \
 # 	done < $(HASHFILE).new
 # 	@mv $(HASHFILE).new $(HASHFILE)
-# 	@echo "✅ Deploy complete."
-
-
-
-DEPLOYIGNORE := .hash.local .hash.local.new Makefile .vscode .gitignore .git trash server
-DEPLOYIGNORE_FIND_EXCLUDE := $(foreach f,$(DEPLOYIGNORE),-name $(f) -o) -false
+# # 	@echo "✅ Deploy complete."
+# 	@$(MAKE) --no-print-directory tree
 
 deploy:
-	@find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type f -print | while read f; do \
-		hash=$$(sha256sum "$$f" | cut -d' ' -f1); \
-		echo "$$hash $$f"; \
+	@find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type d -print | while read dir; do \
+		$(CLI) -p $(PASS) $(HOST) -e "safe_mkdir('$$dir')"; \
+	done
+	@find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type f -print | while read file; do \
+		hash=$$(sha256sum "$$file" | cut -d' ' -f1); \
+		echo "$$hash $$file"; \
 	done > $(HASHFILE).new
 	@while read line; do \
 		hash=$$(echo $$line | cut -d' ' -f1); \
 		file=$$(echo $$line | cut -d' ' -f2-); \
 		old_hash=$$(grep -F "$$file" $(HASHFILE) 2>/dev/null | cut -d' ' -f1); \
 		if [ "$$hash" != "$$old_hash" ]; then \
-			echo "➡️  Uploading $$file -> /$$file ..."; \
+			echo "➡️  Uploading $$file -> /$$file ..."; \
 			python tools/cli.py $$file $(HOST):/$$file -p $(PASS) > /dev/null 2>&1; \
 		fi; \
 	done < $(HASHFILE).new
 	@mv $(HASHFILE).new $(HASHFILE)
-# 	@echo "✅ Deploy complete."
 	@$(MAKE) --no-print-directory tree
+	@ rm -rf .hash.local.tmp
+
+
 
 
 
@@ -101,7 +104,9 @@ clean-esp: clean
 	mpremote ls
 
 tree:
-	@$(CLI) -p $(PASS) $(HOST) -e "tree()"
+# 	@$(CLI) -p $(PASS) $(HOST) -e "tree()"
+	@$(CLI) -p $(PASS) $(HOST) -e "tree()" | sed '1,3d; $$d'
+
 
 ls:
 	@$(CLI) -p $(PASS) $(HOST) -e "ls()"
@@ -119,19 +124,11 @@ rm:
 	$(MAKE) --no-print-directory tree; \
 
 
-# rm:
-# 	@if [ "$(FILE)" = "*" ]; then \
-# 		# тут другой запрос, если FILE равно "*"
-# 		echo "FILE is *"; \
-# 	else \
-# 		if [ -f $(HASHFILE) ]; then \
-# 			grep -v "/$(FILE)" $(HASHFILE) > $(HASHFILE).tmp && mv $(HASHFILE).tmp $(HASHFILE); \
-# 		fi; \
-# 		$(CLI) -p $(PASS) $(HOST) -e 'rm("$(FILE)")'; \
-# 		$(MAKE) --no-print-directory tree; \
-# 	fi
-
-
 test:
 	$(CLI) -p $(PASS) $(HOST) -e "safe_mkdir('tools')"; 
 	@$(CLI) -p $(PASS) $(HOST) -e "tree()"
+
+
+boot:
+	mpremote fs cp boot.py config.json webrepl_cfg.py :
+	mpremote run boot.py
