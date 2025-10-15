@@ -2,14 +2,18 @@ usbipd = "/mnt/c/Program Files/usbipd-win/usbipd.exe"
 # HOST = 192.168.0.92
 HOST = 192.168.0.129
 PASS = 1234
-CLI = python tools/webrepl_cli.py
+# CLI = python tools/webrepl_cli.py
+# CLI2 = python tools/cli.py
+CLI = python tools/webrepl_client.py
+CLI2 = python tools/webrepl_client.py
+
 
 .PHONY: put get ls repl deploy
 
 FILE := $(word 2, $(MAKECMDGOALS))
 
 default: deploy
-	$(CLI) -p $(PASS) $(HOST); 
+	@$(CLI) -p $(PASS) $(HOST); 
 	
 blink:
 	echo $(CLI) -p $(PASS) $(HOST) -e "blink()"
@@ -42,37 +46,11 @@ DEPLOYIGNORE := .hash.local .hash.local.new Makefile .vscode .gitignore .git tra
 DEPLOYIGNORE_FIND_EXCLUDE := $(foreach f,$(DEPLOYIGNORE),-name $(f) -o) -false
 
 
-# deploy:
-# 	@existing_dirs=$$(awk '{print $$2}' $(HASHFILE) | xargs -n1 dirname | sort -u); \
-# 	find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type d -print | while read dir; do \
-# 	    if ! echo "$$existing_dirs" | grep -Fxq "$$dir"; then \
-# 	        echo "📁 Creating $$dir ..."; \
-# 	        $(CLI) -p $(PASS) $(HOST) -e "safe_mkdir('$$dir')"; \
-# 	    fi; \
-# 	done
-
-# 	@find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type f -print | while read file; do \
-# 	    hash=$$(sha256sum "$$file" | cut -d' ' -f1); \
-# 	    echo "$$hash $$file"; \
-# 	done > $(HASHFILE).new
-
-# 	@while read line; do \
-# 	    hash=$$(echo $$line | cut -d' ' -f1); \
-# 	    file=$$(echo $$line | cut -d' ' -f2-); \
-# 	    old_hash=$$(grep -F "$$file" $(HASHFILE) 2>/dev/null | cut -d' ' -f1); \
-# 	    if [ "$$hash" != "$$old_hash" ]; then \
-# 	        echo "➡️  Uploading $$file -> /$$file ..."; \
-# 	        python tools/cli.py $$file $(HOST):/$$file -p $(PASS) > /dev/null 2>&1; \
-# 	    fi; \
-# 	done < $(HASHFILE).new
-
-# 	@mv $(HASHFILE).new $(HASHFILE)
-# 	@$(MAKE) --no-print-directory tree
-# 	@rm -rf .hash.local.tmp
-
-
 deploy:
-	# --- Создаем новые директории ---
+	@if [ ! -f $(HASHFILE) ]; then \
+		touch $(HASHFILE); \
+	fi
+	@# --- Создаем новые директории ---
 	@existing_dirs=$$(awk '{print $$2}' $(HASHFILE) | xargs -n1 dirname | sort -u); \
 	find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type d -print | while read dir; do \
 	    if ! echo "$$existing_dirs" | grep -Fxq "$$dir"; then \
@@ -81,7 +59,7 @@ deploy:
 	    fi; \
 	done
 
-	# --- Загружаем измененные файлы ---
+	@# --- Загружаем измененные файлы ---
 	@find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type f -print | while read file; do \
 	    hash=$$(sha256sum "$$file" | cut -d' ' -f1); \
 	    echo "$$hash $$file"; \
@@ -93,11 +71,11 @@ deploy:
 	    old_hash=$$(grep -F "$$file" $(HASHFILE) 2>/dev/null | cut -d' ' -f1); \
 	    if [ "$$hash" != "$$old_hash" ]; then \
 	        echo "➡️  Uploading $$file -> /$$file ..."; \
-	        python tools/cli.py $$file $(HOST):/$$file -p $(PASS) > /dev/null 2>&1; \
+	        $(CLI2) $$file $(HOST):/$$file -p $(PASS) > /dev/null 2>&1; \
 	    fi; \
 	done < $(HASHFILE).new
 
-	# --- Удаляем файлы, которых больше нет на ПК ---
+	@# --- Удаляем файлы, которых больше нет на ПК ---
 	@while read line; do \
 	    file=$$(echo $$line | cut -d' ' -f2-); \
 	    if [ ! -f "$$file" ]; then \
@@ -106,13 +84,13 @@ deploy:
 	    fi; \
 	done < $(HASHFILE)
 
-	# --- Обновляем HASHFILE ---
+	@# --- Обновляем HASHFILE ---
 	@mv $(HASHFILE).new $(HASHFILE)
-
-	# --- Визуализация дерева ---
+	
+	@# --- Визуализация дерева ---
 	@$(MAKE) --no-print-directory tree
 
-
+d: deploy
 
 
 gg: deploy
@@ -145,7 +123,6 @@ rm:
 		fi; \
 		$(CLI) -p $(PASS) $(HOST) -e 'rm("$(FILE)")' | sed '1,3d; $$d';\
 	fi
-# 	@$(MAKE) --no-print-directory tree; \
 
 boot:
 	mpremote fs cp boot.py config.json webrepl_cfg.py :
