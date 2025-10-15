@@ -63,8 +63,6 @@ def rm(path):
 def ls(): print(' '.join(os.listdir()))
 def reset(): machine.reset()
 
-
-
 def tree(path='.', prefix=''):
     entries = sorted(os.listdir(path))
     entries_count = len(entries)
@@ -85,6 +83,30 @@ def tree(path='.', prefix=''):
 def safe_mkdir(path):
     try: os.mkdir(path)
     except OSError: pass 
+
+
+def delete_all(path="/"):
+    saved_files = ['config.json', 'boot.py', 'webrepl_cfg.py']
+    for filename in os.listdir(path):
+        filepath = path + filename
+        try:
+            if filename in saved_files:
+                print("Skipping saved file:", filepath)
+                continue
+            if 'stat' in dir(os):
+                mode = os.stat(filepath)[0]
+                if mode & 0x4000:
+                    delete_all(filepath + "/")
+                    os.rmdir(filepath)
+                    print("Deleted directory:", filepath)
+                else:
+                    os.remove(filepath)
+                    print("Deleted file:", filepath)
+            else:
+                os.remove(filepath)
+                print("Deleted file:", filepath)
+        except Exception as e:
+            print("Error deleting", filepath, ":", e)
 
     
 with open("config.json") as f: config = json.load(f)

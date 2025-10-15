@@ -103,13 +103,33 @@ clean-esp: clean
 tree:
 	@$(CLI) -p $(PASS) $(HOST) -e "tree()"
 
+ls:
+	@$(CLI) -p $(PASS) $(HOST) -e "ls()"
 
 rm:
-	@if [ -f $(HASHFILE) ]; then \
-		grep -v "/$(FILE)" $(HASHFILE) > $(HASHFILE).tmp && mv $(HASHFILE).tmp $(HASHFILE); \
+	@if [ "$(FILE)" = "all" ]; then \
+		$(CLI) -p $(PASS) $(HOST) -e 'delete_all()'; \
+		$(MAKE) --no-print-directory clean; \
+	else \
+		if [ -f $(HASHFILE) ]; then \
+			grep -v "/$(FILE)" $(HASHFILE) > $(HASHFILE).tmp && mv $(HASHFILE).tmp $(HASHFILE); \
+		fi; \
+		$(CLI) -p $(PASS) $(HOST) -e 'rm("$(FILE)")'; \
 	fi
-	@$(CLI) -p $(PASS) $(HOST) -e 'rm("$(FILE)")'
-	@$(MAKE) --no-print-directory tree
+	$(MAKE) --no-print-directory tree; \
+
+
+# rm:
+# 	@if [ "$(FILE)" = "*" ]; then \
+# 		# тут другой запрос, если FILE равно "*"
+# 		echo "FILE is *"; \
+# 	else \
+# 		if [ -f $(HASHFILE) ]; then \
+# 			grep -v "/$(FILE)" $(HASHFILE) > $(HASHFILE).tmp && mv $(HASHFILE).tmp $(HASHFILE); \
+# 		fi; \
+# 		$(CLI) -p $(PASS) $(HOST) -e 'rm("$(FILE)")'; \
+# 		$(MAKE) --no-print-directory tree; \
+# 	fi
 
 
 test:
