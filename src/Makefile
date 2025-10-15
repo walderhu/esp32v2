@@ -15,7 +15,7 @@ default:
 
 
 blink:
-	$(CLI) -p $(PASS) $(HOST) -e "blink()"
+	echo $(CLI) -p $(PASS) $(HOST) -e "blink()"
 
 repl: deploy
 	$(CLI) -p $(PASS) $(HOST); 

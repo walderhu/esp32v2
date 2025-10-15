@@ -5,7 +5,7 @@ import subprocess
 
 def run(command):
     cmd = [
-        "python", "webrepl_cli.py",
+        "python", "/home/des/WORK/src/tools/webrepl_cli.py",
         "-p", "1234",
         "192.168.0.92",
         "-e", command
@@ -19,11 +19,12 @@ def on_press(direction):
     dir_up = direction.upper()
     print(f"▶ Нажата кнопка: {dir_up}")
     match dir_up:
-        case 'UP': command = "asyncio.create_task(motor1.run(direction=1, freq=10_000))"
-        case 'DOWN': command = "asyncio.create_task(motor1.run(direction=0, freq=10_000))"
-        case 'RIGHT': command = "asyncio.create_task(motor2.run(direction=1, freq=10_000))"
-        case 'LEFT': command = "asyncio.create_task(motor2.run(direction=0, freq=10_000))"
+        case 'UP': command = "asyncio.run(motor1.move(distance_cm=5, freq=10_000))"
+        case 'DOWN': command = "asyncio.run(motor1.move(distance_cm=-5, freq=10_000))"
+        case 'RIGHT': command = "asyncio.run(motor2.move(distance_cm=5, freq=10_000))"
+        case 'LEFT': command = "asyncio.run(motor2.move(distance_cm=-5, freq=10_000))"
     run(command)
+
 
 def on_release(direction):
     dir_up = direction.upper()
