@@ -36,6 +36,7 @@ def download_firmware(url):
     return filename
 
 
+
 def flash_firmware(bin_path):
     print("⚙️  Стираю flash...")
     subprocess.run(["esptool.py", "--chip", "esp32", "--port", PORT, "erase_flash"], check=True)
