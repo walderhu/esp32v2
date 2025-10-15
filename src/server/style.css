@@ -6,6 +6,8 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: #f8f9fa;
     color: #333;
+    font-size: 16px;
+    /* Slightly increased base font */
 }
 
 body {
@@ -44,7 +46,8 @@ button.dir {
     border: 0;
     border-radius: 10px;
     padding: 14px;
-    font-size: 18px;
+    font-size: 20px;
+    /* Increased */
     cursor: pointer;
     user-select: none;
     transition: background 0.1s, transform 0.1s;
@@ -83,7 +86,8 @@ button.dir.pressed {
     grid-column: 2;
     grid-row: 2;
     background: #ffcccc;
-    font-size: 24px;
+    font-size: 26px;
+    /* Increased */
 }
 
 .stop:active,
@@ -144,11 +148,14 @@ button.dir.pressed {
     background: #f0f0f0;
     border: 1px solid #ddd;
     border-radius: 6px;
-    padding: 6px 8px;
+    padding: 8px 10px;
+    /* Slightly larger */
     cursor: pointer;
     transition: all 0.1s;
-    font-size: 12px;
-    min-width: 35px;
+    font-size: 14px;
+    /* Increased */
+    min-width: 40px;
+    /* Adjusted to fit larger font */
 }
 
 .scale-btn:hover {
@@ -183,7 +190,8 @@ button.dir.pressed {
 
 .coord-input label,
 .speed-input label {
-    font-size: 12px;
+    font-size: 13px;
+    /* Increased */
     color: #666;
     display: flex;
     align-items: center;
@@ -192,15 +200,17 @@ button.dir.pressed {
 }
 
 .axis {
-    min-width: 60px;
-    /* Fixed width for alignment */
+    min-width: 70px;
+    /* Adjusted for larger text */
 }
 
 .meta {
-    font-size: 10px;
+    font-size: 11px;
+    /* Increased slightly */
     color: #999;
     background: #f5f5f5;
-    padding: 2px 4px;
+    padding: 3px 5px;
+    /* Slightly larger */
     border-radius: 3px;
     white-space: nowrap;
 }
@@ -209,15 +219,19 @@ button.dir.pressed {
 .speed-input input {
     border: 1px solid #ddd;
     border-radius: 6px;
-    padding: 6px 4px;
-    font-size: 16px;
+    padding: 8px 6px;
+    /* Larger padding */
+    font-size: 18px;
+    /* Increased */
     text-align: center;
     background: #fafafa;
-    width: 60px;
+    width: 70px;
+    /* Slightly wider to accommodate */
 }
 
 .unit {
-    font-size: 12px;
+    font-size: 13px;
+    /* Increased */
     color: #888;
     text-align: center;
 }
@@ -227,9 +241,11 @@ button.dir.pressed {
     color: white;
     border: none;
     border-radius: 6px;
-    padding: 10px 20px;
+    padding: 12px 24px;
+    /* Larger */
     cursor: pointer;
-    font-size: 14px;
+    font-size: 16px;
+    /* Increased */
     font-weight: 600;
     width: 100%;
     max-width: 200px;
@@ -243,6 +259,13 @@ button.dir.pressed {
 
 /* Responsive for Mobile - Prioritize 2x2 layout */
 @media (max-width: 480px) {
+
+    html,
+    body {
+        font-size: 15px;
+        /* Slightly increased for mobile too */
+    }
+
     .container {
         padding: 10px;
         gap: 16px;
@@ -259,7 +282,12 @@ button.dir.pressed {
 
     button.dir {
         padding: 12px;
-        font-size: 16px;
+        font-size: 18px;
+        /* Adjusted */
+    }
+
+    .stop {
+        font-size: 22px;
     }
 
     .scale-row {
@@ -267,9 +295,9 @@ button.dir.pressed {
     }
 
     .scale-btn {
-        padding: 4px 6px;
-        font-size: 11px;
-        min-width: 30px;
+        padding: 6px 8px;
+        font-size: 13px;
+        min-width: 35px;
     }
 
     .columns-row {
@@ -282,20 +310,20 @@ button.dir.pressed {
     }
 
     .axis {
-        min-width: 50px;
+        min-width: 60px;
     }
 
     .coord-input input,
     .speed-input input {
-        width: 45px;
-        padding: 4px 2px;
-        font-size: 14px;
+        width: 55px;
+        padding: 6px 4px;
+        font-size: 16px;
     }
 
     .zero-btn {
-        padding: 8px 16px;
-        font-size: 12px;
-        max-width: 140px;
+        padding: 10px 20px;
+        font-size: 14px;
+        max-width: 160px;
     }
 
     .controls {
@@ -310,11 +338,11 @@ button.dir.pressed {
     }
 
     .unit {
-        font-size: 10px;
+        font-size: 11px;
     }
 
     .meta {
-        font-size: 9px;
-        padding: 1px 3px;
+        font-size: 10px;
+        padding: 2px 4px;
     }
 }
