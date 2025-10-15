@@ -1,5 +1,7 @@
-ERROR:  authentication failed: We do not allow agents to connect to ngrok from your IP address (178.205.127.37).
+ERROR:  failed to start tunnel: The endpoint 'https://jazlynn-englacial-undoubtfully.ngrok-free.dev' is already online. Either
+ERROR:  1. stop your existing endpoint first, or
+ERROR:  2. start both endpoints with `--pooling-enabled` to load balance between them.
 ERROR:  
-ERROR:  ERR_NGROK_9040
-ERROR:  https://ngrok.com/docs/errors/err_ngrok_9040
+ERROR:  ERR_NGROK_334
+ERROR:  https://ngrok.com/docs/errors/err_ngrok_334
 ERROR:  

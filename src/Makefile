@@ -1,6 +1,8 @@
 usbipd = "/mnt/c/Program Files/usbipd-win/usbipd.exe"
 # HOST = 192.168.0.92
-HOST = 192.168.0.129
+# HOST = 192.168.0.129
+HOST = 192.168.1.5
+
 PASS = 1234
 # CLI = python tools/webrepl_cli.py
 # CLI2 = python tools/cli.py
@@ -42,7 +44,7 @@ get:
 
 
 HASHFILE := .hash.local
-DEPLOYIGNORE := .hash.local .hash.local.new Makefile .vscode .gitignore .git trash server
+DEPLOYIGNORE := .hash.local .hash.local.new Makefile .vscode .gitignore .git trash server serva.py
 DEPLOYIGNORE_FIND_EXCLUDE := $(foreach f,$(DEPLOYIGNORE),-name $(f) -o) -false
 
 
@@ -94,7 +96,8 @@ d: deploy
 
 
 gg: deploy
-	$(CLI) -p $(PASS) $(HOST) -e "import uasyncio as asyncio, StepperPWM; asyncio.run(StepperPWM.main())"
+	$(CLI) -p $(PASS) $(HOST) -e "import uasyncio as asyncio, StepperPWM; asyncio.run(StepperPWM.test())"
+# 	$(CLI) -p $(PASS) $(HOST) -e "import uasyncio as asyncio, StepperPWM; asyncio.run(StepperPWM.main())"
 # 	$(CLI) -p $(PASS) $(HOST);
 	$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()"
 

@@ -110,10 +110,18 @@ def delete_all(path="/"):
 
     
 with open("config.json") as f: config = json.load(f)
-ip = connect_wifi(*config['wifi_work'].values())
-# dd('Плата запущена!', *config['telegram'].values(), delay=0.5)
-dd(f'Плата запущена!, {ip=}', *config['telegram'].values(), delay=0.5)
-webrepl.start()
-blink()
+ip = connect_wifi(*config['wifi_home'].values())
+# dd(f'Плата запущена!, {ip=}', *config['telegram'].values(), delay=0.5)
+webrepl.start(); blink()
+
+
+
+# from StepperPWM import StepperPWMAsync
+# motor1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, lead_mm=2.5)
+# motor2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, lead_mm=2.5)
+
+
+
+
 
 

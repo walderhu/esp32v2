@@ -7,13 +7,13 @@
         "LOGIN": "CIMM",
         "PASSWORD": "cgrtools"
     },
-    "wifi_phone": {
-        "LOGIN": "lipatovdn",
-        "PASSWORD": "1234567890"
-    },
     "wifi_home": {
         "LOGIN": "letai_B359",
         "PASSWORD": "Uui84KLq"
+    },
+    "wifi_phone": {
+        "LOGIN": "lipatovdn",
+        "PASSWORD": "1234567890"
     },
     "telegram": {
         "token": "8169199071:AAFqyr5RA3V1yEdYVNsdIk4C9b6OF8bPUuE",
