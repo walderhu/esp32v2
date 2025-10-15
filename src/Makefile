@@ -42,7 +42,37 @@ DEPLOYIGNORE := .hash.local .hash.local.new Makefile .vscode .gitignore .git tra
 DEPLOYIGNORE_FIND_EXCLUDE := $(foreach f,$(DEPLOYIGNORE),-name $(f) -o) -false
 
 
+# deploy:
+# 	@existing_dirs=$$(awk '{print $$2}' $(HASHFILE) | xargs -n1 dirname | sort -u); \
+# 	find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type d -print | while read dir; do \
+# 	    if ! echo "$$existing_dirs" | grep -Fxq "$$dir"; then \
+# 	        echo "📁 Creating $$dir ..."; \
+# 	        $(CLI) -p $(PASS) $(HOST) -e "safe_mkdir('$$dir')"; \
+# 	    fi; \
+# 	done
+
+# 	@find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type f -print | while read file; do \
+# 	    hash=$$(sha256sum "$$file" | cut -d' ' -f1); \
+# 	    echo "$$hash $$file"; \
+# 	done > $(HASHFILE).new
+
+# 	@while read line; do \
+# 	    hash=$$(echo $$line | cut -d' ' -f1); \
+# 	    file=$$(echo $$line | cut -d' ' -f2-); \
+# 	    old_hash=$$(grep -F "$$file" $(HASHFILE) 2>/dev/null | cut -d' ' -f1); \
+# 	    if [ "$$hash" != "$$old_hash" ]; then \
+# 	        echo "➡️  Uploading $$file -> /$$file ..."; \
+# 	        python tools/cli.py $$file $(HOST):/$$file -p $(PASS) > /dev/null 2>&1; \
+# 	    fi; \
+# 	done < $(HASHFILE).new
+
+# 	@mv $(HASHFILE).new $(HASHFILE)
+# 	@$(MAKE) --no-print-directory tree
+# 	@rm -rf .hash.local.tmp
+
+
 deploy:
+	# --- Создаем новые директории ---
 	@existing_dirs=$$(awk '{print $$2}' $(HASHFILE) | xargs -n1 dirname | sort -u); \
 	find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type d -print | while read dir; do \
 	    if ! echo "$$existing_dirs" | grep -Fxq "$$dir"; then \
@@ -51,6 +81,7 @@ deploy:
 	    fi; \
 	done
 
+	# --- Загружаем измененные файлы ---
 	@find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type f -print | while read file; do \
 	    hash=$$(sha256sum "$$file" | cut -d' ' -f1); \
 	    echo "$$hash $$file"; \
@@ -66,9 +97,22 @@ deploy:
 	    fi; \
 	done < $(HASHFILE).new
 
+	# --- Удаляем файлы, которых больше нет на ПК ---
+	@while read line; do \
+	    file=$$(echo $$line | cut -d' ' -f2-); \
+	    if [ ! -f "$$file" ]; then \
+	        echo "🗑 Removing $$file from device ..."; \
+	        $(MAKE) --no-print-directory rm FILE="$$file" || true; \
+	    fi; \
+	done < $(HASHFILE)
+
+	# --- Обновляем HASHFILE ---
 	@mv $(HASHFILE).new $(HASHFILE)
+
+	# --- Визуализация дерева ---
 	@$(MAKE) --no-print-directory tree
-	@rm -rf .hash.local.tmp
+
+
 
 
 gg: deploy
@@ -101,7 +145,7 @@ rm:
 		fi; \
 		$(CLI) -p $(PASS) $(HOST) -e 'rm("$(FILE)")' | sed '1,3d; $$d';\
 	fi
-	@$(MAKE) --no-print-directory tree; \
+# 	@$(MAKE) --no-print-directory tree; \
 
 boot:
 	mpremote fs cp boot.py config.json webrepl_cfg.py :
