@@ -71,26 +71,27 @@ def serve():
                     elif action == 'release': on_release(dir)
                 except Exception as e: print("Ошибка JSON:", e)
                 cl.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nOK")
-                
-            elif req.startswith('GET /misc/home.svg'):
+            elif req.startswith('GET /misc/'):
                 try:
-                    with open('misc/home.svg', 'rb') as f:
-                        svg = f.read()
-                    cl.send(b"HTTP/1.1 200 OK\r\nContent-Type: image/svg+xml\r\n\r\n")
-                    cl.sendall(svg)
+                    path = req.split(' ', 2)[1][1:]  
+                    with open(path, 'rb') as f: content = f.read()
+                    if path.endswith('.svg'): ctype = 'image/svg+xml'
+                    elif path.endswith('.png'): ctype = 'image/png'
+                    elif path.endswith('.jpg') or path.endswith('.jpeg'): ctype = 'image/jpeg'
+                    else: ctype = 'application/octet-stream'
+                    cl.send(f"HTTP/1.1 200 OK\r\nContent-Type: {ctype}\r\n\r\n".encode())
+                    cl.sendall(content)
                 except Exception as e:
-                    print("Ошибка SVG:", e)
+                    print("Ошибка при отдаче файла:", e)
                     cl.send(b"HTTP/1.1 404 Not Found\r\n\r\n")
-                
-                
-            elif req.startswith('GET /misc/stop.svg'):
+            
+            elif req.startswith('GET /style.css'):
                 try:
-                    with open('misc/stop.svg', 'rb') as f:
-                        svg = f.read()
-                    cl.send(b"HTTP/1.1 200 OK\r\nContent-Type: image/svg+xml\r\n\r\n")
-                    cl.sendall(svg)
+                    with open('style.css', 'rb') as f: css = f.read()
+                    cl.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/css; charset=utf-8\r\n\r\n")
+                    cl.sendall(css)
                 except Exception as e:
-                    print("Ошибка SVG:", e)
+                    print("Ошибка CSS:", e)
                     cl.send(b"HTTP/1.1 404 Not Found\r\n\r\n")
 
             else:
