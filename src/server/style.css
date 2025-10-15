@@ -186,6 +186,9 @@ button.dir.pressed {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    /* Центрирование input и unit, без сдвига всей группы */
+    align-items: center;
+    width: 100%;
 }
 
 .coord-input label,
@@ -197,11 +200,15 @@ button.dir.pressed {
     align-items: center;
     gap: 4px;
     font-weight: 600;
+    /* Сдвиг только лейбла (текста) вправо, относительно центрированного input */
+    padding-left: 20px;
 }
 
 .axis {
     min-width: 70px;
     /* Adjusted for larger text */
+    flex-shrink: 0;
+    /* Чтобы лейбл не сжимался */
 }
 
 .meta {
@@ -213,6 +220,8 @@ button.dir.pressed {
     /* Slightly larger */
     border-radius: 3px;
     white-space: nowrap;
+    flex-shrink: 0;
+    /* Чтобы мета не сжималась */
 }
 
 .coord-input input,
@@ -227,6 +236,9 @@ button.dir.pressed {
     background: #fafafa;
     width: 70px;
     /* Slightly wider to accommodate */
+    flex-shrink: 0;
+    /* Фиксированная ширина для выравнивания */
+    /* Input остается на месте, центрирован */
 }
 
 .unit {
@@ -234,6 +246,8 @@ button.dir.pressed {
     /* Increased */
     color: #888;
     text-align: center;
+    /* Ширина как у input, центрировано */
+    width: 70px;
 }
 
 .zero-btn {
@@ -309,6 +323,12 @@ button.dir.pressed {
         gap: 8px;
     }
 
+    .coord-input label,
+    .speed-input label {
+        padding-left: 12px;
+        /* Меньше для мобилки */
+    }
+
     .axis {
         min-width: 60px;
     }
@@ -318,6 +338,10 @@ button.dir.pressed {
         width: 55px;
         padding: 6px 4px;
         font-size: 16px;
+    }
+
+    .unit {
+        width: 55px;
     }
 
     .zero-btn {
@@ -335,10 +359,6 @@ button.dir.pressed {
     .speed-input label {
         font-size: 12px;
         gap: 2px;
-    }
-
-    .unit {
-        font-size: 11px;
     }
 
     .meta {
