@@ -1,7 +1,8 @@
 usbipd = "/mnt/c/Program Files/usbipd-win/usbipd.exe"
 # HOST = 192.168.0.92
 # HOST = 192.168.0.129
-HOST = 192.168.0.129
+# HOST = 192.168.0.129
+HOST = 192.168.1.5
 
 PASS = 1234
 # CLI = python tools/webrepl_cli.py

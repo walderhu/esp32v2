@@ -12,18 +12,17 @@ def blink(led=machine.Pin(2, machine.Pin.OUT), d=0.05, f=0.05, n=3):
     
 def connect_wifi(ssid, password):
     sta = network.WLAN(network.STA_IF)
-    if not sta.isconnected():
-        print("Connecting to WiFi...")
-        sta.active(True)
-        sta.connect(ssid, password)
-        t_start = time.ticks_ms()
-        while time.ticks_diff(time.ticks_ms(), t_start) < 10000:
-            if sta.isconnected():
-                break
-            time.sleep_ms(100)
-        else:
-            raise Exception("WiFi connect failed")
-    return sta.ifconfig()[0]
+    while not sta.isconnected():
+        if not sta.isconnected():
+            print("Connecting to WiFi...")
+            sta.active(True)
+            sta.connect(ssid, password)
+            t_start = time.ticks_ms()
+            while time.ticks_diff(time.ticks_ms(), t_start) < 1e5:
+                if sta.isconnected(): break
+                time.sleep_ms(100)
+            else: raise Exception("WiFi connect failed")
+        else: return sta.ifconfig()[0]
 
 
 def send_telegram(message, token, chat_id):
@@ -110,7 +109,8 @@ def delete_all(path="/"):
 
     
 with open("config.json") as f: config = json.load(f)
-ip = connect_wifi(*config['wifi_work'].values())
+ip = connect_wifi(*config['wifi_home'].values())
+# ip = connect_wifi(*config['wifi_work'].values())
 # dd(f'Плата запущена!, {ip=}', *config['telegram'].values(), delay=0.5)
 webrepl.start(); blink()
 
