@@ -14,27 +14,49 @@ CLI2 = python tools/webrepl_client.py
 
 FILE := $(word 2, $(MAKECMDGOALS))
 
-default: deploy
-	@$(CLI) -p $(PASS) $(HOST); 
+# default: deploy
+# 	$(CLI) -p $(PASS) $(HOST); 
 
+default: 
+	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()" | sed '1,3d; $$d'; sleep 1
+	@$(MAKE) --no-print-directory run FILE="serva.py" | sed '1,3d; $$d'
+# 	@$(MAKE) --no-print-directory repl
+# 	sleep 10
+# 	@$(MAKE) s
 	
 blink:
 	echo $(CLI) -p $(PASS) $(HOST) -e "blink()"
 
-repl: deploy
-	$(CLI) -p $(PASS) $(HOST); 
-
 r:
 	$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.reset()"
+
+# put:
+# 	@if [ -z "$(FILE)" ]; then \
+# 		echo "Ошибка: укажите FILE=имя_файла"; \
+# 		exit 1; \
+# 	fi
+# 	@echo "➡️  Uploading $(FILE) ..."
+# 	@$(CLI) $(FILE) $(HOST):/$(FILE) -p $(PASS)
 
 put:
 	@if [ -z "$(FILE)" ]; then \
 		echo "Ошибка: укажите FILE=имя_файла"; \
 		exit 1; \
 	fi
-	@echo "➡️  Uploading $(FILE) ..."
-	@$(CLI) $(FILE) $(HOST):/$(FILE) -p $(PASS)
-
+	@if [ ! -f "$(HASHFILE)" ]; then touch $(HASHFILE); fi
+	@hash=$$(sha256sum "$(FILE)" | cut -d' ' -f1); \
+	old_hash=$$(grep -F "$(FILE)" $(HASHFILE) 2>/dev/null | cut -d' ' -f1); \
+	if [ "$$hash" != "$$old_hash" ]; then \
+		echo "➡️  Uploading $(FILE) ..."; \
+		$(CLI) $(FILE) $(HOST):/$(FILE) -p $(PASS); \
+		# Update hashfile \
+		grep -v "$(FILE)" $(HASHFILE) > $(HASHFILE).tmp 2>/dev/null; \
+		echo "$$hash $(FILE)" >> $(HASHFILE).tmp; \
+		mv $(HASHFILE).tmp $(HASHFILE); \
+	fi
+# 	else \
+# 		echo "✅ $(FILE) is up to date"; \
+	
 get:
 	@if [ -z "$(FILE)" ]; then \
 		echo "Ошибка: укажите FILE=имя_файла"; \
@@ -138,9 +160,28 @@ t: deploy
 # 	@$(CLI) -p $(PASS) $(HOST)
 
 s:
-	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"
+# 	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"
+	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
 
 reset:
 	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.reset()"
 
 kill: reset
+
+
+run:
+	@if [ -z "$(FILE)" ]; then \
+		echo "Ошибка: укажите FILE=имя_файла"; \
+		exit 1; \
+	fi
+	@$(MAKE) --no-print-directory put FILE="$(FILE)"
+	@MODULE=$$(basename "$(FILE)" .py); \
+	$(CLI) -p $(PASS) $(HOST) -e "import $$MODULE; $$MODULE.main()"
+
+
+repl: 
+	$(CLI) -p $(PASS) $(HOST); 
+
+
+clang:
+	/home/des/miniforge3/envs/esp/bin/black "$(FILE)"
