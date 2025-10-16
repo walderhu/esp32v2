@@ -19,6 +19,7 @@ FILE := $(word 2, $(MAKECMDGOALS))
 # 	$(CLI) -p $(PASS) $(HOST); 
 
 default: 
+	@$(MAKE) --no-print-directory s
 	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()" | sed '1,3d; $$d'; sleep 1
 	@$(MAKE) --no-print-directory run FILE="serva.py" | sed '1,3d; $$d'
 # 	@$(MAKE) --no-print-directory repl

@@ -99,11 +99,7 @@ class Servo:
         self.move_to(deg)
         return self
 
-    def __ior__(self, deg):
-        self.write(deg)
-        return self
-
-    def __ior__(self, deg, accel_ratio=0.15):
+    def __ior__(self, deg, accel_ratio=0.1):
         return self.move_accel(deg=deg, accel_ratio=accel_ratio)
         
     def move_accel(self, deg, accel_ratio=0.05):
@@ -147,7 +143,7 @@ class Servo:
 
 def main():
     with Servo(pin_id=13, speed=360) as servo:
-        servo.angle = 0
+        servo |= 0
         # servo.move(0, 180)
         # servo.move(180, 0)
         # servo += 180
@@ -155,8 +151,8 @@ def main():
         # servo.move_to(90)
 
         while True:
-            servo @= 0
-            servo @= 180
+            servo |= 0
+            servo |= 180
 
         # servo.angle = 0
         # servo.angle = 180
@@ -164,11 +160,6 @@ def main():
         # servo.angle = 180
         # servo.angle = 0
         # servo.angle = 180
-
-        # servo.move_to(0)
-        # while True:
-        #     servo += 0.1
-        #     time.sleep(0.0001)
 
 
 if __name__ == "__main__":
