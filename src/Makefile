@@ -1,7 +1,7 @@
 usbipd = "/mnt/c/Program Files/usbipd-win/usbipd.exe"
 # HOST = 192.168.0.92
 # HOST = 192.168.0.129
-HOST = 192.168.1.5
+HOST = 192.168.0.129
 
 PASS = 1234
 # CLI = python tools/webrepl_cli.py
@@ -16,6 +16,7 @@ FILE := $(word 2, $(MAKECMDGOALS))
 
 default: deploy
 	@$(CLI) -p $(PASS) $(HOST); 
+
 	
 blink:
 	echo $(CLI) -p $(PASS) $(HOST) -e "blink()"
@@ -44,7 +45,7 @@ get:
 
 
 HASHFILE := .hash.local
-DEPLOYIGNORE := .hash.local .hash.local.new Makefile .vscode .gitignore .git trash server serva.py
+DEPLOYIGNORE := .hash.local .hash.local.new Makefile .vscode .gitignore .git trash server
 DEPLOYIGNORE_FIND_EXCLUDE := $(foreach f,$(DEPLOYIGNORE),-name $(f) -o) -false
 
 
@@ -89,8 +90,8 @@ deploy:
 	@# --- Обновляем HASHFILE ---
 	@mv $(HASHFILE).new $(HASHFILE)
 	
-	@# --- Визуализация дерева ---
-	@$(MAKE) --no-print-directory tree
+# 	@# --- Визуализация дерева ---
+# 	@$(MAKE) --no-print-directory tree
 
 d: deploy
 
@@ -102,7 +103,7 @@ gg: deploy
 	$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()"
 
 clean:
-	@rm -rf .hash.local.new .hash.local
+	@rm -rf .hash.*
 
 clean-esp: clean
 	mpremote run trash/delete_all.py
@@ -132,5 +133,14 @@ boot:
 	mpremote run boot.py
 
 
-test:
-	@echo "hello"
+t: deploy
+	@$(CLI) -p $(PASS) $(HOST) -e "import serva; serva.main()"
+# 	@$(CLI) -p $(PASS) $(HOST)
+
+s:
+	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"
+
+reset:
+	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.reset()"
+
+kill: reset

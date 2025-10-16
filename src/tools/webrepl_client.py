@@ -270,16 +270,59 @@ Sec-WebSocket-Key: foo\r
 #        sys.stdout.write(l)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def exec_code(ws, code, done_marker="<<<WEBREPL_DONE>>>", idle_timeout=0.4):
     """
     Send code and wait for a marker or idle timeout.
     """
+    import time  
+    import select
+
     if "machine.reset" in code:
-        ws.write(code.encode("utf-8") + b'\r', WEBREPL_FRAME_TXT)
-        print("[sent reset, not waiting for output]")
+        print("[sending Ctrl+C before reset...]")
+        exec_code(ws, "__KEYBOARD_INTERRUPT__")
+        print("[sending reset command...]")
+        ws.write(b"import machine; machine.reset()\r", WEBREPL_FRAME_TXT)
+        print("[reset command sent]")
         return
 
-    import select, time
+    # NEW: Check if we want to send Ctrl+C (KeyboardInterrupt)
+    if code.strip() == "__KEYBOARD_INTERRUPT__":
+        ws.write(b'\x03', WEBREPL_FRAME_TXT)  # Ctrl+C
+        print("[sent Ctrl+C to interrupt running script]")
+        try:
+            sock = ws.s
+            buf = b""
+            start = time.time()
+            while time.time() - start < 2:
+                r, _, _ = select.select([sock], [], [], 0.1)
+                if r:
+                    buf += ws.read(1, text_ok=True)
+            if buf:
+                sys.stdout.buffer.write(buf)
+                sys.stdout.buffer.flush()
+        except: pass
+        return
 
     payload = code + "\rprint(%r)\r" % done_marker
     ws.write(payload.encode("utf-8"), WEBREPL_FRAME_TXT)
@@ -323,6 +366,29 @@ def exec_code(ws, code, done_marker="<<<WEBREPL_DONE>>>", idle_timeout=0.4):
         except Exception:
             sys.stdout.write(buf.decode('utf-8', 'replace'))
             sys.stdout.flush()
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
 
 
 def help(rc=0):
