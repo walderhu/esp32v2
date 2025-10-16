@@ -158,8 +158,8 @@ boot:
 
 
 t: deploy
-	@$(CLI) -p $(PASS) $(HOST) -e "import serva; serva.main()"
-# 	@$(CLI) -p $(PASS) $(HOST)
+	@$(CLI) -p $(PASS) $(HOST) -e "import thermal_sensor; thermal_sensor.main()"
+	@$(CLI) -p $(PASS) $(HOST)
 
 s:
 # 	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"
