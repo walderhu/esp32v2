@@ -10,8 +10,8 @@ CLI = python tools/webrepl_client.py
 CLI2 = python tools/webrepl_client.py
 
 
-.PHONY: put get ls repl deploy
-
+.PHONY: put get ls repl deploy flash
+ 
 FILE := $(word 2, $(MAKECMDGOALS))
 
 # default: deploy
@@ -29,6 +29,9 @@ blink:
 	echo $(CLI) -p $(PASS) $(HOST) -e "blink()"
 
 r:
+	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
+	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()"
+hr:
 	$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.reset()"
 
 # put:
@@ -118,12 +121,16 @@ deploy:
 
 d: deploy
 
+FILE = StepperPWM.py
+MODULE = $(basename $(FILE))
 
-gg: deploy
-	$(CLI) -p $(PASS) $(HOST) -e "import uasyncio as asyncio, StepperPWM; asyncio.run(StepperPWM.test())"
-# 	$(CLI) -p $(PASS) $(HOST) -e "import uasyncio as asyncio, StepperPWM; asyncio.run(StepperPWM.main())"
-# 	$(CLI) -p $(PASS) $(HOST);
+$(MODULE):
+	@$(MAKE) --no-print-directory put FILE="$(FILE)"
+	$(CLI) -p $(PASS) $(HOST) -e "import uasyncio, $(MODULE); uasyncio.run($(MODULE).test())"
 	$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()"
+# 	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
+
+
 
 clean:
 	@rm -rf .hash.*
@@ -186,3 +193,24 @@ repl:
 
 clang:
 	/home/des/miniforge3/envs/esp/bin/black "$(FILE)"
+
+
+
+usbipd := "/mnt/c/Program Files/usbipd-win/usbipd.exe"
+esptool="/home/des/miniforge3/bin/esptool"
+bootfile="/home/des/WORK/.software/ESP32_GENERIC-20250911-v1.26.1.bin"
+port="--port /dev/ttyUSB0"
+bootfiles = boot.py config.json webrepl_cfg.py
+src := /home/des/WORK/src
+bootfiles := $(addprefix $(src)/, $(bootfiles))
+
+flash:
+	-$(usbipd) bind --busid 1-3
+	-$(usbipd) attach --wsl --busid 1-3
+	$(esptool) $(port) erase_flash
+	$(esptool) --chip esp32 $(port) write_flash -z 0x1000 $(bootfile)
+	mpremote cp $(bootfiles) :
+	mpremote run $(src)/boot.py
+
+
+
