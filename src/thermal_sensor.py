@@ -13,3 +13,4 @@ while True:
     temp = ds.read_temp(roms[0])
     print(f"\r\033[K", end='')
     print(f"Temperature: {temp:.2f} °C", end='')
+   

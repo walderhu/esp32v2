@@ -1,8 +1,7 @@
 usbipd = "/mnt/c/Program Files/usbipd-win/usbipd.exe"
-# HOST = 192.168.0.92
+HOST = 192.168.0.92
 # HOST = 192.168.0.129
-# HOST = 192.168.0.129
-HOST = 192.168.1.5
+# HOST = 192.168.1.5
 
 PASS = 1234
 # CLI = python tools/webrepl_cli.py
@@ -21,7 +20,7 @@ FILE := $(word 2, $(MAKECMDGOALS))
 default: 
 	@$(MAKE) --no-print-directory s
 	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()" | sed '1,3d; $$d'; sleep 1
-	@$(MAKE) --no-print-directory run FILE="serva.py" | sed '1,3d; $$d'
+	@$(MAKE) --no-print-directory run FILE="StepperPWM.py" | sed '1,3d; $$d'
 # 	@$(MAKE) --no-print-directory repl
 # 	sleep 10
 # 	@$(MAKE) s
