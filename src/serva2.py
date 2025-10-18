@@ -221,16 +221,8 @@ class StepperPWMAsync:
             self.stop()
             self.running = False
             await asyncio.sleep(0.1)
-
-    
-    
-    
-    
-    
     
 
-
-    
     
     
 async def test():
