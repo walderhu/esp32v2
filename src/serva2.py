@@ -252,12 +252,13 @@ async def test():
         print(f'home done: m1={m1.current_coord}, m2={m2.current_coord}')
 
 
-        # start_event = asyncio.Event()
-        start_event = None
-        t1 = asyncio.create_task(m1.move_accel(distance_cm=40, max_freq=20_000, accel_ratio=0.2, start_event=start_event))
-        t2 = asyncio.create_task(m2.move_accel(distance_cm=40, max_freq=20_000, accel_ratio=0.2, start_event=start_event))
+        start_event = asyncio.Event()
+        t1 = asyncio.create_task(m1.move_to(target_mm=400, freq=20_000, start_event=start_event))
+        t2 = asyncio.create_task(m2.move_to(target_mm=400, freq=20_000, start_event=start_event))
+        # t1 = asyncio.create_task(m1.move_accel(distance_cm=40, max_freq=20_000, accel_ratio=0.2, start_event=start_event))
+        # t2 = asyncio.create_task(m2.move_accel(distance_cm=40, max_freq=20_000, accel_ratio=0.2, start_event=start_event))
         await asyncio.sleep(1)
-        # start_event.set()
+        start_event.set()
         await asyncio.gather(t1, t2)
         print(f'run done: m1={m1.current_coord}, m2={m2.current_coord}')
         cleanup()
