@@ -40,7 +40,7 @@ class StepperPWMAsync:
         try: self.step_pwm.duty_u16(0)
         except RuntimeError: pass
         self.running = False
-
+        
     def is_running(self): return self.running
     def is_enabled(self): return self.enabled
 
@@ -95,9 +95,6 @@ class StepperPWMAsync:
 
     async def run(self, direction=1, freq=1000, duration=None):
         if not self.enabled: self.enable(True)
-        if self.sw_pin.value() == 1: 
-            self.stop(); return
-
         self.current_dir = direction
         self.dir_pin.value(self.current_dir ^ self.invert_dir)
         self.step_pwm.freq(int(freq))
@@ -110,141 +107,53 @@ class StepperPWMAsync:
         if duration is not None:
             stop_time = time.ticks_add(start_time, int(duration * 1000))
 
-        step_interval_ms = 1000 / freq
         last_step_time = time.ticks_ms()
 
         try:
             while self.running:
                 now = time.ticks_ms()
-                if time.ticks_diff(now, last_step_time) >= step_interval_ms:
-                    if self.current_dir == 1:
-                        self.current_coord += 1
-                    else:
-                        self.current_coord -= 1
-                    last_step_time = now
+                delta_ms = time.ticks_diff(now, last_step_time)
+                delta_s = delta_ms * 1000
+                delta_mm = delta_s * self.lead_mm * self.steps_per_rev / freq
+                delta_cm = delta_mm / 10
+                if direction == 0:
+                    delta_cm = -delta_cm
+                self.current_coord += delta_cm
+                last_step_time = now
 
-                if self.sw_pin.value() == 1:
-                    self.current_dir ^= 1
-                    self.dir_pin.value(self.current_dir ^ self.invert_dir)
-                    await asyncio.sleep_ms(200)  # антидребезг
-                    self.step_pwm.duty_u16(32768)
+                if self.sw_pin.value() == 1 and direction == 0:
+                    self.stop() # начало из концевика и движение на концевик
+                    break
 
                 if stop_time and time.ticks_diff(now, stop_time) >= 0:
-                    self.stop(); break
+                    self.stop() # ограничение по времени
+                    break
 
-                if not (0 < self.current_coord <= self.limit_coord):
-                    self.stop(); break
+                # if not (0 < self.current_coord <= self.limit_coord):
+                #     self.stop(); break
 
                 await asyncio.sleep_ms(5)
         finally:
-            self.step_pwm.duty_u16(0)
+            self.stop()
             
-            
-    async def run(self, direction=1, freq=1000, duration=None):
-        if not self.enabled: self.enable(True)
-        self.current_dir = direction
-        self.dir_pin.value(self.current_dir ^ self.invert_dir)
-        self.step_pwm.freq(int(freq))
-        self.step_pwm.duty_u16(32768)
-        self.running = True
 
-        if duration:
-            await asyncio.sleep(duration)
-
-        self.stop()
-
-'''
-    async def move(self, distance_mm=None, distance_cm=None, freq=1000):
-        """Асинхронное перемещение на мм"""
-        if distance_mm == None:
-            if distance_cm == None: raise RuntimeError('Не передано сколько передвигаться')
-            else: distance_mm = distance_cm * 10
-        direction = 1 if distance_mm > 0 else 0
-        steps_needed = abs(distance_mm) * self.steps_per_rev / self.lead_mm
-        duration = steps_needed / freq
-        await self.run(direction=direction, freq=freq, duration=duration)
-
-    async def move_accel(self, distance_mm=None, max_freq=20000, 
-                        min_freq=5000, accel_ratio=0.2, distance_cm=None):
-        """Перемещение с плавным ускорением/торможением (через PWM) с учётом координат"""
-        if distance_mm is None and distance_cm is None: 
-            raise ValueError("Укажите distance_mm или distance_cm")
-        if distance_mm is None: 
-            distance_mm = distance_cm * 10
-
-        direction = 1 if distance_mm > 0 else 0
-        self.dir_pin.value(direction ^ self.invert_dir)
-        self.enable(True)
-
-        steps_total = abs(distance_mm) * self.steps_per_rev / self.lead_mm
-        accel_steps = max(1, int(steps_total * accel_ratio))
-        decel_start = steps_total - accel_steps
-
-        self.step_pwm.duty_u16(32768)
-        self.running = True
-
-        steps_done = 0
-        dt = 0.005  # ~5 мс
-        step_interval_ms = 1000 / max_freq
-        last_step_time = time.ticks_ms()
-
-        while steps_done < steps_total and self.running:
-            now = time.ticks_ms()
-
-            # проверка концевика и ограничения по координате
-            if (direction == 1 and self.current_coord >= getattr(self, "max_coord", float('inf'))) or \
-            (direction == 0 and self.current_coord <= 0):
-                self.stop()
-                break
-
-            # рассчёт частоты с ускорением/торможением
-            if steps_done < accel_steps:  # ускорение
-                ratio = steps_done / accel_steps
-                freq = min_freq + (max_freq - min_freq) * ratio
-            elif steps_done > decel_start:  # торможение
-                ratio = (steps_total - steps_done) / accel_steps
-                freq = min_freq + (max_freq - min_freq) * max(0, ratio)
-            else:
-                freq = max_freq
-
-            freq = max(min_freq, min(freq, max_freq))
-            self.step_pwm.freq(int(freq))
-
-            # обновление координаты в зависимости от направления
-            step_interval_ms = 1000 / freq
-            if time.ticks_diff(now, last_step_time) >= step_interval_ms:
-                if direction == 1:
-                    self.current_coord += 1
-                else:
-                    self.current_coord -= 1
-                steps_done += 1
-                last_step_time = now
-
-            await asyncio.sleep(dt)
-
-        self.stop()
-        await asyncio.sleep(0.1)
-        self.running = False
-
-'''
 m1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, lead_mm=2.5, limit_coord=60)
 m2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, lead_mm=2.5, limit_coord=90)
 
 async def test():
-    async with m1, m2: 
-        # await m1.home(freq=12_000)
-        # await m2.home(freq=12_000)
-        m1.current_coord = 0
+    async with m1:
+        await m1.home(freq=12_000)
         print(m1.current_coord)
-        await m1.run(direction=1, freq=8_000, duration=1)
         
+        await m1.run(direction=1, freq=6_000, duration=3)
+        print(m1.current_coord)
+        await asyncio.sleep(1)
         
-        # m1.enable(True)
-        # m1.dir_pin.value(1)
-        # m1.step_pwm.freq(8000)
-        # m1.step_pwm.duty_u16(32768)
+        await m1.run(direction=0, freq=6_000, duration=5)
+        print(m1.current_coord)
         # await asyncio.sleep(1)
-        # m1.stop()
-
-        # await m2.run(direction=1, freq=8_000, duration=2)
-
+        
+        await m1.run(direction=1, freq=6_000, duration=3)
+        print(m1.current_coord)
+        
+        
