@@ -11,20 +11,20 @@ CLI2 = python tools/webrepl_client.py
 
 
 .PHONY: put get ls repl deploy flash
- 
+
 FILE := $(word 2, $(MAKECMDGOALS))
 
 # default: deploy
-# 	$(CLI) -p $(PASS) $(HOST); 
+# 	$(CLI) -p $(PASS) $(HOST);
 
-default: 
-	@$(MAKE) --no-print-directory s
-	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()" | sed '1,3d; $$d'; sleep 1
-	@$(MAKE) --no-print-directory run FILE="StepperPWM.py" | sed '1,3d; $$d'
+default: repl
+# 	@$(MAKE) --no-print-directory s
+# 	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()" | sed '1,3d; $$d'; sleep 1
+# 	@$(MAKE) --no-print-directory run FILE="StepperPWM.py" | sed '1,3d; $$d'
 # 	@$(MAKE) --no-print-directory repl
 # 	sleep 10
 # 	@$(MAKE) s
-	
+
 blink:
 	echo $(CLI) -p $(PASS) $(HOST) -e "blink()"
 
@@ -60,7 +60,7 @@ put:
 	fi
 # 	else \
 # 		echo "✅ $(FILE) is up to date"; \
-	
+
 get:
 	@if [ -z "$(FILE)" ]; then \
 		echo "Ошибка: укажите FILE=имя_файла"; \
@@ -115,22 +115,11 @@ deploy:
 
 	@# --- Обновляем HASHFILE ---
 	@mv $(HASHFILE).new $(HASHFILE)
-	
+
 # 	@# --- Визуализация дерева ---
 # 	@$(MAKE) --no-print-directory tree
 
 d: deploy
-
-FILE = StepperPWM.py
-MODULE = $(basename $(FILE))
-
-$(MODULE):
-	@$(MAKE) --no-print-directory put FILE="$(FILE)"
-	$(CLI) -p $(PASS) $(HOST) -e "import uasyncio, $(MODULE); uasyncio.run($(MODULE).test())"
-	$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()"
-# 	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
-
-
 
 clean:
 	@rm -rf .hash.*
@@ -176,7 +165,6 @@ reset:
 
 kill: reset
 
-
 run:
 	@if [ -z "$(FILE)" ]; then \
 		echo "Ошибка: укажите FILE=имя_файла"; \
@@ -186,10 +174,8 @@ run:
 	@MODULE=$$(basename "$(FILE)" .py); \
 	$(CLI) -p $(PASS) $(HOST) -e "import $$MODULE; $$MODULE.main()"
 
-
-repl: 
-	$(CLI) -p $(PASS) $(HOST); 
-
+repl:
+	@$(CLI) -p $(PASS) $(HOST);
 
 clang:
 	/home/des/miniforge3/envs/esp/bin/black "$(FILE)"
@@ -213,4 +199,15 @@ flash:
 	mpremote run $(src)/boot.py
 
 
+
+
+
+FILE = serva2.py
+MODULE = $(basename $(FILE))
+gg:
+	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()"; sleep 1
+	@$(MAKE) --no-print-directory put FILE="$(FILE)"
+	@$(CLI) -p $(PASS) $(HOST) -e "import $(basename $(FILE)); asyncio.run($(basename $(FILE)).test())"
+	@$(CLI) -p $(PASS) $(HOST);
+# 	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
 

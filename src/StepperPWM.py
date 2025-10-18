@@ -15,6 +15,7 @@ class StepperPWMAsync:
     
     def __init__(self, step_pin=14, dir_pin=15, en_pin=13,
                  steps_per_rev=200, invert_dir=False, invert_enable=False, lead_mm=8):
+        self.position_steps = 0  # Initialize position tracking
         self.step_pwm = PWM(Pin(step_pin))
         self.dir_pin = Pin(dir_pin, Pin.OUT)
         self.en_pin = Pin(en_pin, Pin.OUT) if en_pin is not None else None
@@ -159,9 +160,9 @@ class StepperPWMAsync:
         try:
             if exc_type: raise self.StepperEngineError(str(exc))
         finally:
-            self.stop()
-            self.deinit()
             self.enable(False)
+            self.deinit()
+            await asyncio.sleep(0.2)
 
     class StepperEngineError(Exception):
         def __init__(self, message): super().__init__(message)
@@ -206,8 +207,6 @@ class StepperPWMAsync:
             steps_done += freq * dt * 2
             await asyncio.sleep(dt)
             
-            # self.position_steps += (1 if direction else -1) * freq * dt * 2 # надо тестить
-
         self.stop()
         await asyncio.sleep(0.1)
         self.running = False
@@ -220,32 +219,26 @@ motor1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, lead_mm=2.5)
 motor2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, lead_mm=2.5)
 
 async def test():
-    try:
-        async with motor1, motor2:
-            await motor1.home(freq=12_000)
-            await motor1.move_accel(distance_cm=60, max_freq=40_000, accel_ratio=0.3)
-            await motor2.move_accel(distance_cm=85, max_freq=50_000),
-            await motor1.move_accel(distance_cm=-60, max_freq=40_000, accel_ratio=0.3)
-            await motor2.move_accel(distance_cm=-85, max_freq=50_000),
-            r = 1
-            t1 = asyncio.create_task(motor1.move_accel(distance_cm=r*60, max_freq=20_000))
-            t2 = asyncio.create_task(motor2.move_accel(distance_cm=r*85, max_freq=28_350))
-            await asyncio.gather(t1, t2)
-            await asyncio.sleep(0.5)
-            r = -1
-            t1 = asyncio.create_task(motor1.move_accel(distance_cm=r*60, max_freq=20_000))
-            t2 = asyncio.create_task(motor2.move_accel(distance_cm=r*85, max_freq=28_350))
-            await asyncio.gather(t1, t2)
-    finally:
-        await asyncio.sleep(0.2)
-        motor1.stop(); motor2.stop()
-        motor1.enable(False); motor2.enable(False)
+    async with motor1, motor2:
+        await motor1.home(freq=12_000)
+        await motor2.home(freq=12_000)
+        await motor1.move_accel(distance_cm=40, max_freq=10_000, accel_ratio=0.3)
+        await motor2.move_accel(distance_cm=60, max_freq=10_000)  # Removed trailing comma
+        await motor1.move_accel(distance_cm=-40, max_freq=10_000, accel_ratio=0.3)
+        await motor2.move_accel(distance_cm=-60, max_freq=10_000)  # Removed trailing comma
+        r = 1
+        t1 = asyncio.create_task(motor1.move_accel(distance_cm=r*40, max_freq=10_000))
+        t2 = asyncio.create_task(motor2.move_accel(distance_cm=r*60, max_freq=10_000))
+        await asyncio.gather(t1, t2)
+        await asyncio.sleep(0.5)
+        r = -1
+        t1 = asyncio.create_task(motor1.move_accel(distance_cm=r*40, max_freq=10_000))
+        t2 = asyncio.create_task(motor2.move_accel(distance_cm=r*60, max_freq=10_000))
+        await asyncio.gather(t1, t2)
 
 if __name__ == '__main__':
     asyncio.run(test())
-
-
-
-
-
-
+    
+    
+    
+    
