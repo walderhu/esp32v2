@@ -56,14 +56,14 @@ class StepperPWMAsync:
             self.enable(0)
             # self.deinit()
             await asyncio.sleep(0.2)
-            del self
+            # del self
 
     def deinit(self):
         try: self.step_pwm.deinit()
         except: pass 
     
 
-    async def home(self, freq=1000, debounce_ms=150, start_event=None):
+    async def home(self, freq=12_000, debounce_ms=150, start_event=None):
         """Возврат к концевику (нулевая позиция)"""
         if start_event: await start_event.wait()
         if not self.enabled: self.enable(True)
@@ -131,14 +131,112 @@ class StepperPWMAsync:
             self.stop()
             
 
+    async def move_to(self, target_mm=None, target_cm=None, freq=1000, start_event=None):
+        """Асинхронное перемещение на мм"""
+        if target_mm == None:
+            if target_cm == None: raise RuntimeError('Не передано сколько передвигаться')
+            else: target_mm = target_cm * 10
+            
+        if self.current_coord is None: await self.home(freq=12_000)
+        distance_mm = target_mm - self.current_coord * 10
+        direction = 1 if distance_mm > 0 else 0
+        steps_needed = abs(distance_mm) * self.steps_per_rev / self.lead_mm
+        duration = steps_needed / freq
+        await self.run(direction=direction, freq=freq, duration=duration, start_event=start_event)
 
 
+
+
+
+
+
+
+
+
+    async def move_accel(self, distance_mm=None, max_freq=20000, 
+                         min_freq=5000, accel_ratio=0.2, distance_cm=None, start_event=None):
+        """Перемещение с плавным ускорением/торможением (через PWM), с учётом координатных ограничений"""
+        if distance_mm is None and distance_cm is None:
+            raise ValueError("Укажите distance_mm или distance_cm")
+        if distance_mm is None:
+            distance_mm = distance_cm * 10
+
+        if self.current_coord is None:
+            await self.home(freq=12_000)
+
+        direction = 1 if distance_mm > 0 else 0
+        self.dir_pin.value(direction ^ self.invert_dir)
+        self.enable(True)
+        self.current_dir = direction
+
+        steps_total = abs(distance_mm) * self.steps_per_rev / self.lead_mm
+        accel_steps = max(1, int(steps_total * accel_ratio))
+        decel_start = steps_total - accel_steps
+        dt = 0.005  
+        self.running = True
+        self.step_pwm.duty_u16(32768)
+
+        if start_event:
+            await start_event.wait()
+
+        steps_done = 0
+        last_time = time.ticks_ms()
+
+        try:
+            while steps_done < steps_total and self.running:
+                if steps_done < accel_steps:
+                    ratio = steps_done / accel_steps
+                    freq = min_freq + (max_freq - min_freq) * ratio
+                elif steps_done > decel_start:
+                    ratio = (steps_total - steps_done) / accel_steps
+                    freq = min_freq + (max_freq - min_freq) * max(0, ratio)
+                else:
+                    freq = max_freq
+
+                freq = max(min_freq, min(freq, max_freq))
+                self.step_pwm.freq(int(freq))
+                self.freq = freq
+
+                now = time.ticks_ms()
+                dt_real = time.ticks_diff(now, last_time) / 1000
+                last_time = now
+                delta_mm = dt_real * freq * self.lead_mm / self.steps_per_rev
+                delta_cm = delta_mm / 10
+
+                if direction == 1:
+                    self.current_coord += delta_cm
+                    if self.limit_coord is not None and self.current_coord >= self.limit_coord:
+                        self.stop()
+                        break
+                else:
+                    self.current_coord -= delta_cm
+                    if self.sw_pin.value() == 1:
+                        self.current_coord = 0
+                        self.stop()
+                        break
+
+                steps_done += freq * dt_real
+                await asyncio.sleep(dt)
+        finally:
+            self.stop()
+            self.running = False
+            await asyncio.sleep(0.1)
+
+    
+    
+    
+    
+    
+    
+
+
+    
+    
+    
 async def test():
-    m1_limit_coord=65 * 0.7
-    m2_limit_coord=90 * 0.7
-    k = m2_limit_coord / m1_limit_coord 
-    m1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, lead_mm=2.5, limit_coord=m1_limit_coord)
-    m2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, lead_mm=2.5, limit_coord=m2_limit_coord)
+    k = 95 / 60
+    m1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, lead_mm=2.475, limit_coord=65)
+    m2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, lead_mm=2.475, limit_coord=90)
     
     async with m1, m2:
         start_event = asyncio.Event()
@@ -150,11 +248,12 @@ async def test():
         print(f'home done: m1={m1.current_coord}, m2={m2.current_coord}')
 
 
-
-        start_event = asyncio.Event()
-        t1 = asyncio.create_task(m1.run(direction=1, freq=6_000, start_event=start_event))
-        t2 = asyncio.create_task(m2.run(direction=1, freq=k*2*6_000, start_event=start_event))
+        # start_event = asyncio.Event()
+        start_event = None
+        t1 = asyncio.create_task(m1.move_accel(distance_cm=60, max_freq=20_000, accel_ratio=0.2, start_event=start_event))
+        t2 = asyncio.create_task(m2.move_accel(distance_cm=60, max_freq=20_000, accel_ratio=0.2, start_event=start_event))
         await asyncio.sleep(1)
-        start_event.set()
+        # start_event.set()
         await asyncio.gather(t1, t2)
         print(f'run done: m1={m1.current_coord}, m2={m2.current_coord}')
+
