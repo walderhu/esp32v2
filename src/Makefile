@@ -205,9 +205,9 @@ flash:
 FILE = serva2.py
 MODULE = $(basename $(FILE))
 gg:
+# 	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
 	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()"; sleep 1
 	@$(MAKE) --no-print-directory put FILE="$(FILE)"
 	@$(CLI) -p $(PASS) $(HOST) -e "import $(basename $(FILE)); asyncio.run($(basename $(FILE)).test())"
 	@$(CLI) -p $(PASS) $(HOST);
-# 	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
 

@@ -72,6 +72,10 @@ class StepperPWMAsync:
     async def home(self, freq=1000, debounce_ms=150):
         """Возврат к концевику (нулевая позиция)"""
         if not self.enabled: self.enable(True)
+        
+        if self.sw_pin.value() == 1:
+            self.current_coord = 0; return
+        
         self.dir_pin.value(0 ^ self.invert_dir)
         self.step_pwm.freq(int(freq))
         self.step_pwm.duty_u16(32768)
@@ -82,7 +86,6 @@ class StepperPWMAsync:
             while True:
                 if self.sw_pin.value() == 1: 
                     self.step_pwm.duty_u16(0)
-                    self.current_coord = 0
                     await asyncio.sleep_ms(debounce_ms)
                     break
                 await asyncio.sleep_ms(2)
@@ -90,6 +93,7 @@ class StepperPWMAsync:
             self.step_pwm.duty_u16(0)
             self.running = False
             await asyncio.sleep(0.5)
+            self.current_coord = 0
 
 
 
@@ -113,47 +117,44 @@ class StepperPWMAsync:
             while self.running:
                 now = time.ticks_ms()
                 delta_ms = time.ticks_diff(now, last_step_time)
-                delta_s = delta_ms * 1000
-                delta_mm = delta_s * self.lead_mm * self.steps_per_rev / freq
+                delta_s = delta_ms / 1000
+                delta_mm = delta_s * freq * self.lead_mm / self.steps_per_rev
                 delta_cm = delta_mm / 10
-                if direction == 0:
-                    delta_cm = -delta_cm
-                self.current_coord += delta_cm
+                self.current_coord += delta_cm if direction == 1 else -delta_cm
                 last_step_time = now
 
                 if self.sw_pin.value() == 1 and direction == 0:
-                    self.stop() # начало из концевика и движение на концевик
-                    break
-
+                    self.current_coord = 0
+                    self.stop(); break # начало из концевика и движение на концевик
                 if stop_time and time.ticks_diff(now, stop_time) >= 0:
-                    self.stop() # ограничение по времени
-                    break
-
-                # if not (0 < self.current_coord <= self.limit_coord):
-                #     self.stop(); break
+                    self.stop(); break # ограничение по времени
+                if self.current_coord >= self.limit_coord:
+                    self.stop(); break # ограничение по координате
 
                 await asyncio.sleep_ms(5)
         finally:
             self.stop()
             
 
-m1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, lead_mm=2.5, limit_coord=60)
-m2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, lead_mm=2.5, limit_coord=90)
+
+m1_limit_coord=65 * 0.7
+m2_limit_coord=90 * 0.7
+k = m2_limit_coord / m1_limit_coord 
+m1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, lead_mm=2.5, limit_coord=m1_limit_coord)
+m2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, lead_mm=2.5, limit_coord=m2_limit_coord)
 
 async def test():
-    async with m1:
-        await m1.home(freq=12_000)
-        print(m1.current_coord)
+    async with m1, m2:
+        t1 = asyncio.create_task(m1.home(freq=12_000))
+        t2 = asyncio.create_task(m2.home(freq=k*12_000))
+        await asyncio.gather(t1, t2)
+        print(f'm1={m1.current_coord}, m2={m2.current_coord}')
         
-        await m1.run(direction=1, freq=6_000, duration=3)
-        print(m1.current_coord)
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.5)
+        t1 = asyncio.create_task(m1.run(direction=1, freq=6_000))
+        t2 = asyncio.create_task(m2.run(direction=1, freq=k*6_000))
+        await asyncio.gather(t1, t2)
+        print(f'm1={m1.current_coord}, m2={m2.current_coord}')
         
-        await m1.run(direction=0, freq=6_000, duration=5)
-        print(m1.current_coord)
-        # await asyncio.sleep(1)
-        
-        await m1.run(direction=1, freq=6_000, duration=3)
-        print(m1.current_coord)
-        
+ 
         
