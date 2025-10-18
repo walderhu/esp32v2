@@ -62,14 +62,6 @@ class StepperPWMAsync:
         try: self.step_pwm.deinit()
         except: pass 
     
-    
-# def deinit(self):
-#     try:
-#         if hasattr(self, "step_pwm") and self.step_pwm:
-#             self.step_pwm.deinit()
-#     except Exception as e:
-#         print("PWM deinit skipped:", e)
-
 
     async def home(self, freq=1000, debounce_ms=150, start_event=None):
         """Возврат к концевику (нулевая позиция)"""
@@ -147,6 +139,7 @@ async def test():
     k = m2_limit_coord / m1_limit_coord 
     m1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, lead_mm=2.5, limit_coord=m1_limit_coord)
     m2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, lead_mm=2.5, limit_coord=m2_limit_coord)
+    
     async with m1, m2:
         start_event = asyncio.Event()
         t1 = asyncio.create_task(m1.home(freq=12_000, start_event=start_event))
