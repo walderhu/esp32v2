@@ -223,127 +223,42 @@ class StepperPWMAsync:
             await asyncio.sleep(0.1)
     
 
+_m1 = None
+_m2 = None
+
+def cleanup():
+    """Вызови это если нужно полностью освободить моторы"""
+    global _m1, _m2
+    if _m1:
+        _m1.deinit(); _m1 = None
+    if _m2:
+        _m2.deinit(); _m2 = None
+    import gc; gc.collect()
     
-    
-# async def test():
-#     k = 95 / 60
-#     m1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, lead_mm=2.475, limit_coord=65)
-#     m2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, lead_mm=2.475, limit_coord=90)
-    
-#     async with m1, m2:
-#         start_event = asyncio.Event()
-#         t1 = asyncio.create_task(m1.home(freq=12_000, start_event=start_event))
-#         t2 = asyncio.create_task(m2.home(freq=k*12_000, start_event=start_event))
-#         await asyncio.sleep(1)  
-#         start_event.set()    
-#         await asyncio.gather(t1, t2)
-#         print(f'home done: m1={m1.current_coord}, m2={m2.current_coord}')
-
-
-#         # start_event = asyncio.Event()
-#         start_event = None
-#         t1 = asyncio.create_task(m1.move_accel(distance_cm=60, max_freq=20_000, accel_ratio=0.2, start_event=start_event))
-#         t2 = asyncio.create_task(m2.move_accel(distance_cm=60, max_freq=20_000, accel_ratio=0.2, start_event=start_event))
-#         await asyncio.sleep(1)
-#         # start_event.set()
-#         await asyncio.gather(t1, t2)
-#         print(f'run done: m1={m1.current_coord}, m2={m2.current_coord}')
-
-
-
-class Portal:
-    """
-    Синхронный интерфейс для портала на двух шаговиках (X и Y).
-    """
-    def __init__(self, motor_x: StepperPWMAsync, motor_y: StepperPWMAsync, ratio_yx=1.0):
-        """
-        ratio_yx — коэффициент скорости для второго мотора относительно первого
-        (например, если моторы двигают одну ось с разными передачами).
-        """
-        self.x = motor_x
-        self.y = motor_y
-        self.ratio_yx = ratio_yx
-
-    # ======= ВСПОМОГАТЕЛЬНОЕ =======
-    def _run(self, coro):
-        """Запуск асинхронной задачи синхронно."""
-        try:
-            asyncio.run(coro)
-        except RuntimeError:
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(coro)
-
-    # ======= ПУБЛИЧНЫЕ МЕТОДЫ =======
-    def enable(self, state=True):
-        """Включить или выключить оба мотора."""
-        self.x.enable(state)
-        self.y.enable(state)
-
-    def stop(self):
-        """Остановить оба мотора."""
-        self.x.stop()
-        self.y.stop()
-
-    def home(self, freq=12000):
-        """Возврат к концевикам синхронно для обоих моторов."""
-        async def _home():
-            tasks = [asyncio.create_task(self.x.home(freq=freq)),
-                     asyncio.create_task(self.y.home(freq=int(freq*self.ratio_yx)))]
-            await asyncio.gather(*tasks)
-        self._run(_home())
-
-    def move_accel(self, x_cm=None, y_cm=None, max_freq=20000, accel_ratio=0.2):
-        """Синхронное перемещение с плавным ускорением."""
-        async def _move():
-            tasks = []
-            if x_cm is not None:
-                tasks.append(asyncio.create_task(self.x.move_accel(distance_cm=x_cm,
-                                max_freq=max_freq, accel_ratio=accel_ratio)))
-            if y_cm is not None:
-                tasks.append(asyncio.create_task(self.y.move_accel(distance_cm=y_cm,
-                                max_freq=int(max_freq*self.ratio_yx), accel_ratio=accel_ratio)))
-            await asyncio.gather(*tasks)
-        self._run(_move())
-
-    def move_to(self, x_mm=None, y_mm=None, freq=10000):
-        """Простое перемещение без ускорения."""
-        async def _move():
-            tasks = []
-            if x_mm is not None:
-                tasks.append(asyncio.create_task(self.x.move_to(distance_mm=x_mm, freq=freq)))
-            if y_mm is not None:
-                tasks.append(asyncio.create_task(self.y.move_to(distance_mm=y_mm, freq=int(freq*self.ratio_yx))))
-            await asyncio.gather(*tasks)
-        self._run(_move())
-
-    def deinit(self):
-        """Деинициализация PWM."""
-        self.x.deinit()
-        self.y.deinit()
-
-    def __enter__(self):
-        self.enable(True)
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        try:
-            if exc_type: 
-                raise exc_type(exc) from tb
-        finally:
-            self.enable(False)
-            self.deinit()
-            
-            
-            
-            
-            
 async def test():
-    m1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, lead_mm=2.475, limit_coord=65)
-    m2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, lead_mm=2.475, limit_coord=90)
+    global _m1, _m2
 
-    with Portal(m1, m2, ratio_yx=90/64) as portal:
-        portal.home(freq=12_000)
-        portal.move_to(x_mm=30, y_mm=40, freq=12_000)
-        portal.move_to(x_mm=10, y_mm=10, freq=15_000)
+    if _m1 is None: _m1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, lead_mm=2.475, limit_coord=60)
+    if _m2 is None: _m2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, lead_mm=2.475, limit_coord=90)
+    m1, m2 = _m1, _m2
 
+    async with m1, m2:
+        start_event = asyncio.Event()
+        t1 = asyncio.create_task(m1.home(freq=12_000, start_event=start_event))
+        t2 = asyncio.create_task(m2.home(freq=12_000, start_event=start_event))
+        await asyncio.sleep(1)  
+        start_event.set()    
+        await asyncio.gather(t1, t2)
+        print(f'home done: m1={m1.current_coord}, m2={m2.current_coord}')
+
+
+        # start_event = asyncio.Event()
+        start_event = None
+        t1 = asyncio.create_task(m1.move_accel(distance_cm=40, max_freq=20_000, accel_ratio=0.2, start_event=start_event))
+        t2 = asyncio.create_task(m2.move_accel(distance_cm=40, max_freq=20_000, accel_ratio=0.2, start_event=start_event))
+        await asyncio.sleep(1)
+        # start_event.set()
+        await asyncio.gather(t1, t2)
+        print(f'run done: m1={m1.current_coord}, m2={m2.current_coord}')
+        cleanup()
 
