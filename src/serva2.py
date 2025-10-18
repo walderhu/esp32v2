@@ -56,6 +56,7 @@ class StepperPWMAsync:
             self.enable(0)
             # self.deinit()
             await asyncio.sleep(0.2)
+            del self
 
     def deinit(self):
         try: self.step_pwm.deinit()
@@ -69,10 +70,11 @@ class StepperPWMAsync:
 #     except Exception as e:
 #         print("PWM deinit skipped:", e)
 
-    async def home(self, freq=1000, debounce_ms=150):
+
+    async def home(self, freq=1000, debounce_ms=150, start_event=None):
         """Возврат к концевику (нулевая позиция)"""
+        if start_event: await start_event.wait()
         if not self.enabled: self.enable(True)
-        
         if self.sw_pin.value() == 1:
             self.current_coord = 0; return
         
@@ -97,11 +99,12 @@ class StepperPWMAsync:
 
 
 
-    async def run(self, direction=1, freq=1000, duration=None):
+    async def run(self, direction=1, freq=1000, duration=None, start_event=None):
         if not self.enabled: self.enable(True)
         self.current_dir = direction
         self.dir_pin.value(self.current_dir ^ self.invert_dir)
         self.step_pwm.freq(int(freq))
+        if start_event: await start_event.wait()
         self.step_pwm.duty_u16(32768)  
         self.running = True
         self.freq = freq
@@ -137,24 +140,28 @@ class StepperPWMAsync:
             
 
 
-m1_limit_coord=65 * 0.7
-m2_limit_coord=90 * 0.7
-k = m2_limit_coord / m1_limit_coord 
-m1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, lead_mm=2.5, limit_coord=m1_limit_coord)
-m2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, lead_mm=2.5, limit_coord=m2_limit_coord)
 
 async def test():
+    m1_limit_coord=65 * 0.7
+    m2_limit_coord=90 * 0.7
+    k = m2_limit_coord / m1_limit_coord 
+    m1 = StepperPWMAsync(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, lead_mm=2.5, limit_coord=m1_limit_coord)
+    m2 = StepperPWMAsync(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, lead_mm=2.5, limit_coord=m2_limit_coord)
     async with m1, m2:
-        t1 = asyncio.create_task(m1.home(freq=12_000))
-        t2 = asyncio.create_task(m2.home(freq=k*12_000))
+        start_event = asyncio.Event()
+        t1 = asyncio.create_task(m1.home(freq=12_000, start_event=start_event))
+        t2 = asyncio.create_task(m2.home(freq=k*12_000, start_event=start_event))
+        await asyncio.sleep(1)  
+        start_event.set()    
         await asyncio.gather(t1, t2)
-        print(f'm1={m1.current_coord}, m2={m2.current_coord}')
-        
-        await asyncio.sleep(0.5)
-        t1 = asyncio.create_task(m1.run(direction=1, freq=6_000))
-        t2 = asyncio.create_task(m2.run(direction=1, freq=k*6_000))
+        print(f'home done: m1={m1.current_coord}, m2={m2.current_coord}')
+
+
+
+        start_event = asyncio.Event()
+        t1 = asyncio.create_task(m1.run(direction=1, freq=6_000, start_event=start_event))
+        t2 = asyncio.create_task(m2.run(direction=1, freq=k*2*6_000, start_event=start_event))
+        await asyncio.sleep(1)
+        start_event.set()
         await asyncio.gather(t1, t2)
-        print(f'm1={m1.current_coord}, m2={m2.current_coord}')
-        
- 
-        
+        print(f'run done: m1={m1.current_coord}, m2={m2.current_coord}')
