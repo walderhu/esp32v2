@@ -15,6 +15,11 @@
         "**/.gitignore": true,
         // "**/.vscode": true,
         // "**/.*": true
+        "boot.py": true,
+        "webrepl_cfg.py": true,
+        "config.json": true,
+        ".hash.local": true,
+        "nanoshim": true,
     },
     "python.defaultInterpreterPath": "/home/des/miniforge3/envs/esp/bin/python",
     "terminal.integrated.profiles.linux": {
