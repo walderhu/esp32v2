@@ -1,0 +1,14 @@
+.deployignore
+.hash.local
+.hash.local.new
+Makefile
+.vscode
+.gitignore
+.git
+trash
+server
+nanoshim
+modules
+tools
+portal.py
+serva2.py

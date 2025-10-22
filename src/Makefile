@@ -9,38 +9,23 @@ PASS = 1234
 CLI = python tools/webrepl_client.py
 CLI2 = python tools/webrepl_client.py
 
+RUN := $(CLI) -p $(PASS) $(HOST) -e 
 
 .PHONY: put get ls repl deploy flash
 
 FILE := $(word 2, $(MAKECMDGOALS))
 
-# default: deploy
-# 	$(CLI) -p $(PASS) $(HOST);
-
 default: repl
-# 	@$(MAKE) --no-print-directory s
-# 	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()" | sed '1,3d; $$d'; sleep 1
-# 	@$(MAKE) --no-print-directory run FILE="StepperPWM.py" | sed '1,3d; $$d'
-# 	@$(MAKE) --no-print-directory repl
-# 	sleep 10
-# 	@$(MAKE) s
 
 blink:
-	echo $(CLI) -p $(PASS) $(HOST) -e "blink()"
+	@$(RUN) "blink()" | sed '1,6d; $$d'
 
 r:
-	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
-	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()"
+	@$(RUN) "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
+	@$(RUN) "import machine; machine.soft_reset()"
 hr:
-	$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.reset()"
+	$(RUN) "import machine; machine.reset()"
 
-# put:
-# 	@if [ -z "$(FILE)" ]; then \
-# 		echo "Ошибка: укажите FILE=имя_файла"; \
-# 		exit 1; \
-# 	fi
-# 	@echo "➡️  Uploading $(FILE) ..."
-# 	@$(CLI) $(FILE) $(HOST):/$(FILE) -p $(PASS)
 
 put:
 	@if [ -z "$(FILE)" ]; then \
@@ -71,9 +56,9 @@ get:
 
 
 HASHFILE := .hash.local
-DEPLOYIGNORE := .hash.local .hash.local.new Makefile .vscode .gitignore .git trash server
+# DEPLOYIGNORE := .hash.local .hash.local.new Makefile .vscode .gitignore .git trash server nanoshim modules tools portal.py serva2.py 
+DEPLOYIGNORE := $(shell cat .deployignore | tr '\n' ' ')
 DEPLOYIGNORE_FIND_EXCLUDE := $(foreach f,$(DEPLOYIGNORE),-name $(f) -o) -false
-
 
 deploy:
 	@if [ ! -f $(HASHFILE) ]; then \
@@ -84,7 +69,7 @@ deploy:
 	find . \( $(DEPLOYIGNORE_FIND_EXCLUDE) \) -prune -o -type d -print | while read dir; do \
 	    if ! echo "$$existing_dirs" | grep -Fxq "$$dir"; then \
 	        echo "📁 Creating $$dir ..."; \
-	        $(CLI) -p $(PASS) $(HOST) -e "safe_mkdir('$$dir')"; \
+	        $(RUN) "safe_mkdir('$$dir')"; \
 	    fi; \
 	done
 
@@ -116,13 +101,14 @@ deploy:
 	@# --- Обновляем HASHFILE ---
 	@mv $(HASHFILE).new $(HASHFILE)
 
-# 	@# --- Визуализация дерева ---
-# 	@$(MAKE) --no-print-directory tree
-
 d: deploy
 
 clean:
 	@rm -rf .hash.*
+	$(RUN) "delete_all()"
+	$(RUN) "import machine; machine.reset()"
+	sleep 5
+	$(RUN) "tree()"
 
 clean-esp: clean
 	mpremote run trash/delete_all.py
@@ -131,20 +117,20 @@ clean-esp: clean
 	mpremote ls
 
 tree:
-	@$(CLI) -p $(PASS) $(HOST) -e "tree()" | sed '1,3d; $$d'
+	@$(RUN) "tree()" | sed '1,3d; $$d'
 
 ls:
-	@$(CLI) -p $(PASS) $(HOST) -e "ls()" | sed '1,3d; $$d'
+	@$(RUN) "ls()" | sed '1,3d; $$d'
 
 rm:
 	@if [ "$(FILE)" = "all" ]; then \
-		$(CLI) -p $(PASS) $(HOST) -e 'delete_all()' | sed '1,3d; $$d';\
+		$(RUN) 'delete_all()' | sed '1,3d; $$d';\
 		@$(MAKE) --no-print-directory clean; \
 	else \
 		if [ -f $(HASHFILE) ]; then \
 			grep -v "/$(FILE)" $(HASHFILE) > $(HASHFILE).tmp && mv $(HASHFILE).tmp $(HASHFILE); \
 		fi; \
-		$(CLI) -p $(PASS) $(HOST) -e 'rm("$(FILE)")' | sed '1,3d; $$d';\
+		$(RUN) 'rm("$(FILE)")' | sed '1,3d; $$d';\
 	fi
 
 boot:
@@ -153,15 +139,15 @@ boot:
 
 
 t: deploy
-	@$(CLI) -p $(PASS) $(HOST) -e "import thermal_sensor; thermal_sensor.main()"
+	@$(RUN) "import thermal_sensor; thermal_sensor.main()"
 	@$(CLI) -p $(PASS) $(HOST)
 
 s:
-# 	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"
-	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
+# 	@$(RUN) "__KEYBOARD_INTERRUPT__"
+	@$(RUN) "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
 
 reset:
-	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.reset()"
+	@$(RUN) "import machine; machine.reset()"
 
 kill: reset
 
@@ -172,7 +158,7 @@ run:
 	fi
 	@$(MAKE) --no-print-directory put FILE="$(FILE)"
 	@MODULE=$$(basename "$(FILE)" .py); \
-	$(CLI) -p $(PASS) $(HOST) -e "import $$MODULE; $$MODULE.main()"
+	$(RUN) "import $$MODULE; $$MODULE.main()"
 
 repl:
 	@$(CLI) -p $(PASS) $(HOST);
@@ -200,14 +186,12 @@ flash:
 
 
 
-
-
 FILE = serva2.py
 MODULE = $(basename $(FILE))
 gg:
-# 	@$(CLI) -p $(PASS) $(HOST) -e "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
-	@$(CLI) -p $(PASS) $(HOST) -e "import machine; machine.soft_reset()"; sleep 1
+# 	@$(RUN) "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
+	@$(RUN) "import machine; machine.soft_reset()"; sleep 1
 	@$(MAKE) --no-print-directory put FILE="$(FILE)"
-	@$(CLI) -p $(PASS) $(HOST) -e "import $(basename $(FILE)); asyncio.run($(basename $(FILE)).test())"
+	@$(RUN) "import $(basename $(FILE)); asyncio.run($(basename $(FILE)).test())"
 	@$(CLI) -p $(PASS) $(HOST);
 
