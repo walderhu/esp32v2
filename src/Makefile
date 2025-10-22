@@ -1,20 +1,10 @@
 usbipd = "/mnt/c/Program Files/usbipd-win/usbipd.exe"
 HOST = 192.168.0.92
-# HOST = 192.168.0.129
-# HOST = 192.168.1.5
-
 PASS = 1234
-# CLI = python tools/webrepl_cli.py
-# CLI2 = python tools/cli.py
 CLI = python tools/webrepl_client.py
-CLI2 = python tools/webrepl_client.py
-
 RUN := $(CLI) -p $(PASS) $(HOST) -e 
-
 .PHONY: put get ls repl deploy flash
-
 FILE := $(word 2, $(MAKECMDGOALS))
-
 default: repl
 
 # blink:
@@ -30,14 +20,11 @@ for i in range(5): \
     led.value(0); sleep(0.1)"
 
 
-
-
 r:
 	@$(RUN) "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
 	@$(RUN) "import machine; machine.soft_reset()"
 hr:
 	$(RUN) "import machine; machine.reset()"
-
 
 put:
 	@if [ -z "$(FILE)" ]; then \
@@ -55,8 +42,6 @@ put:
 		echo "$$hash $(FILE)" >> $(HASHFILE).tmp; \
 		mv $(HASHFILE).tmp $(HASHFILE); \
 	fi
-# 	else \
-# 		echo "✅ $(FILE) is up to date"; \
 
 get:
 	@if [ -z "$(FILE)" ]; then \
@@ -97,7 +82,7 @@ deploy:
 	    old_hash=$$(grep -F "$$file" $(HASHFILE) 2>/dev/null | cut -d' ' -f1); \
 	    if [ "$$hash" != "$$old_hash" ]; then \
 	        echo "➡️  Uploading $$file -> /$$file ..."; \
-	        $(CLI2) $$file $(HOST):/$$file -p $(PASS) > /dev/null 2>&1; \
+	        $(CLI) $$file $(HOST):/$$file -p $(PASS) > /dev/null 2>&1; \
 	    fi; \
 	done < $(HASHFILE).new
 
@@ -191,11 +176,11 @@ flash:
 
 
 
-FILE = serva2.py
+FILE = test2.py
 MODULE = $(basename $(FILE))
 gg:
-	@$(RUN) "import machine; machine.soft_reset()"; sleep 1
-	@$(MAKE) --no-print-directory put FILE="$(FILE)"
-	@$(RUN) "import $(basename $(FILE)); asyncio.run($(basename $(FILE)).test())"
-	@$(CLI) -p $(PASS) $(HOST);
+	$(RUN) "import machine; machine.soft_reset()"; sleep 0.1
+	$(MAKE) --no-print-directory put FILE="$(FILE)"
+	$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()"
+	$(MAKE) --no-print-directory repl
 

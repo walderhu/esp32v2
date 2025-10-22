@@ -4,7 +4,7 @@ import time
 class StepperPWM:
     def __init__(self, step_pin, dir_pin, en_pin, sw_pin,
                  steps_per_rev=200, invert_dir=False, invert_enable=False, 
-                 lead_mm=8, limit_coord=None):
+                 lead_mm=8, limit_coord=None, freq=0):
         self.step_pwm = PWM(Pin(step_pin))
         self.dir_pin = Pin(dir_pin, Pin.OUT)
         self.en_pin = Pin(en_pin, Pin.OUT) if en_pin is not None else None
@@ -19,11 +19,12 @@ class StepperPWM:
         self.enabled = False
         self.running = False
         self.current_dir = 1
-        self._freq = 0
+        self._freq = freq
 
         self.step_pwm.duty_u16(0)
         self.enable(False)
         self.current_coord = None
+        
 
     def enable(self, state=True):
         """Включить или выключить драйвер"""
@@ -42,15 +43,13 @@ class StepperPWM:
     def is_running(self): return self.running
     def is_enabled(self): return self.enabled
 
-
     @property
     def freq(self): return self._freq
 
     @freq.setter
     def freq(self, new_freq):
-        if 0 <= new_freq <= 50_000: self._freq = new_freq
-        else: raise ValueError('Неккоректное значение, дб 0 ≤ freq ≤ 50_000')
-        
+        if 1 <= new_freq <= 40_000: self._freq = new_freq
+        else: raise ValueError('frequency must be from 1Hz to 40MHz')
         
     def __enter__(self):
         self.enable(True)
@@ -65,13 +64,11 @@ class StepperPWM:
         try: self.enable(False)
         except Exception: pass
 
-
     def home(self, freq=None, debounce_ms=150):
         """Возврат к концевику (нулевая позиция)"""
         if not self.enabled: self.enable(True)
         if self.sw_pin.value() == 1:
             self.current_coord = 0; return
-        
         if freq is None: freq = self.freq
         
         self.dir_pin.value(0 ^ self.invert_dir)
@@ -79,7 +76,6 @@ class StepperPWM:
         self.step_pwm.duty_u16(32768)
         self.running = True
         self.current_dir = 0
-        self.freq = freq
         try:
             while True:
                 if self.sw_pin.value() == 1: 
@@ -92,7 +88,6 @@ class StepperPWM:
             self.running = False
             time.sleep(0.5)
             self.current_coord = 0
-
 
 
     def run(self, direction=1, freq=1000, duration=None):
@@ -108,7 +103,6 @@ class StepperPWM:
         stop_time = None
         if duration is not None:
             stop_time = time.ticks_add(start_time, int(duration * 1000))
-
         last_step_time = time.ticks_ms()
 
         try:
@@ -128,7 +122,6 @@ class StepperPWM:
                     self.stop(); break # ограничение по времени
                 if self.current_coord >= self.limit_coord:
                     self.stop(); break # ограничение по координате
-
                 time.sleep_ms(5)
         finally:
             self.stop()
@@ -140,16 +133,17 @@ class StepperPWM:
             if target_cm == None: raise RuntimeError('Не передано сколько передвигаться')
             else: target_mm = target_cm * 10
             
+        if freq is None: freq = self.freq
         if self.current_coord is None: self.home(freq=12_000)
         distance_mm = target_mm - self.current_coord * 10
         direction = 1 if distance_mm > 0 else 0
         steps_needed = abs(distance_mm) * self.steps_per_rev / self.lead_mm
         duration = steps_needed / freq
         self.run(direction=direction, freq=freq, duration=duration)
+        
 
-
-    def move_accel(self, distance_mm=None, max_freq=20000, 
-                         min_freq=5000, accel_ratio=0.2, distance_cm=None):
+    def move_accel(self, distance_mm=None, max_freq=20_000, 
+                         min_freq=5_000, accel_ratio=0.2, distance_cm=None):
         """Перемещение с плавным ускорением/торможением (через PWM), с учётом координатных ограничений"""
         if distance_mm is None and distance_cm is None:
             raise ValueError("Укажите distance_mm или distance_cm")
@@ -210,25 +204,28 @@ class StepperPWM:
             self.running = False
             time.sleep(0.1)
     
-
-    def __add__(self, coord): return self.move_accel(coord)
-    def __sub__(self, coord): return self.move_accel(-coord)
+    def __add__(self, coord): return self.move_accel(distance_cm=coord)
+    def __sub__(self, coord): return self.move_accel(distance_cm=-coord)
     def __imatmul__(self, coord): return self.move_to(coord)
 
 
-
-
 def test():
-    m1=StepperPWM(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, lead_mm=2.475, limit_coord=60),
-    m2=StepperPWM(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, lead_mm=2.475, limit_coord=90),
+    lead = 2.475 * (20.4 / 20)
+    m1=StepperPWM(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, lead_mm=lead, limit_coord=60)
+    m2=StepperPWM(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, lead_mm=lead, limit_coord=90)
     with m1, m2:
-        m1.home(); m2.home()
-        
-        portal @= (10, 10)
-        time.sleep(0.5)
-        portal.x += 5
-        portal.y += 5
+        m1.home(freq=12_000)        
+        m2.home(freq=12_000)        
 
-        m1 += 5
-        m2 -= 3
-        m1 @= 0; m2 @= 0
+        time.sleep(5)
+        m1.move_to(target_cm=20, freq=10_000)
+        time.sleep(0.5)
+        m2.move_to(target_cm=20, freq=10_000)
+        
+        # m1 -= 30
+        # m2 -= 20
+        
+        # portal @= (10, 10)
+        # time.sleep(0.5)
+        # portal.x += 5
+        # portal.y += 5
