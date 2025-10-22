@@ -15,32 +15,25 @@
             <button class="dir home" data-dir="home">
                 <img src="misc/home.svg" alt="home" />
             </button>
-
             <button class="dir stop" data-dir="stop">
                 <img src="misc/stop.svg" alt="Stop" width="32" height="32" />
             </button>
-
             <button class="dir up" data-dir="up">
                 <img src="misc/up.svg" alt="up" width="32" height="32" />
             </button>
-
             <button class="dir down" data-dir="down">
                 <img src="misc/down.svg" alt="down" width="32" height="32" />
             </button>
-
             <button class="dir left" data-dir="left">
                 <img src="misc/left.svg" alt="left" width="32" height="32" />
             </button>
-
             <button class="dir right" data-dir="right">
                 <img src="misc/right.svg" alt="right" width="32" height="32" />
             </button>
-
         </div>
 
         <!-- Controls Section -->
         <div class="controls">
-            <!-- Scale Buttons (without label) -->
             <div class="scale-row">
                 <button class="scale-btn" data-scale="0.1">0.1</button>
                 <button class="scale-btn" data-scale="1">1</button>
@@ -50,7 +43,6 @@
                 <button class="scale-btn" data-scale="100">100</button>
             </div>
 
-            <!-- Coordinates and Speed Columns -->
             <div class="columns-row">
                 <div class="column">
                     <div class="coord-input">
@@ -59,9 +51,9 @@
                         <span class="unit">мм</span>
                     </div>
                     <div class="speed-input">
-                        <label><span class="axis">Скорость</span> <span class="meta"></span></label>
+                        <label><span class="axis">Скорость</span></label>
                         <input type="number" id="speed" value="10" step="1">
-                        <span class="unit">мм</span>
+                        <span class="unit">мм/с</span>
                     </div>
                 </div>
                 <div class="column">
@@ -71,25 +63,24 @@
                         <span class="unit">мм</span>
                     </div>
                     <div class="speed-input">
-                        <label><span class="axis">Длина шага</span> <span class="meta"></span></label>
+                        <label><span class="axis">Длина шага</span></label>
                         <input type="number" id="stepLength" value="5" step="0.1">
                         <span class="unit">мм</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Zero Button -->
             <button id="zeroBtn" class="zero-btn">Применить</button>
         </div>
     </div>
 
     <script>
-        // Existing joystick script
-        const sendPress = (dir, action = "press") => {
+        // Общая функция отправки POST
+        const sendPress = (dir, action = "press", value = null) => {
             fetch('/press', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ dir, action })
+                body: JSON.stringify({ dir, action, value })
             }).catch(e => console.error('Ошибка отправки:', e));
 
             const btn = document.querySelector('button.dir.' + dir);
@@ -99,90 +90,48 @@
             }
         };
 
+        // Кнопки движения
         document.querySelectorAll('button.dir').forEach(btn => {
             const dir = btn.dataset.dir;
             let isPressed = false;
 
-            const press = () => {
-                if (!isPressed) {
-                    sendPress(dir, 'press');
-                    isPressed = true;
-                }
-            };
-            const release = () => {
-                if (isPressed) {
-                    sendPress(dir, 'release');
-                    isPressed = false;
-                }
-            };
+            const press = () => { if (!isPressed) { sendPress(dir, 'press'); isPressed = true; } };
+            const release = () => { if (isPressed) { sendPress(dir, 'release'); isPressed = false; } };
 
             btn.addEventListener('mousedown', press);
             btn.addEventListener('mouseup', release);
             btn.addEventListener('mouseleave', release);
-            btn.addEventListener('touchstart', (e) => { e.preventDefault(); press(); }, { passive: false });
+            btn.addEventListener('touchstart', e => { e.preventDefault(); press(); }, { passive: false });
             btn.addEventListener('touchend', release);
         });
 
-        const keyMap = {
-            ArrowUp: 'up',
-            ArrowDown: 'down',
-            ArrowLeft: 'left',
-            ArrowRight: 'right',
-            ' ': 'stop',
-            h: 'home'
-        };
+        // Управление клавишами
+        const keyMap = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', ' ': 'stop', h: 'home' };
         const keysPressed = {};
+        window.addEventListener('keydown', e => { const dir = keyMap[e.key]; if (dir && !keysPressed[dir]) { sendPress(dir, 'press'); keysPressed[dir] = true; } });
+        window.addEventListener('keyup', e => { const dir = keyMap[e.key]; if (dir && keysPressed[dir]) { sendPress(dir, 'release'); keysPressed[dir] = false; } });
 
-        window.addEventListener('keydown', (ev) => {
-            const dir = keyMap[ev.key];
-            if (dir && !keysPressed[dir]) {
-                sendPress(dir, 'press');
-                keysPressed[dir] = true;
-            }
-        });
-        window.addEventListener('keyup', (ev) => {
-            const dir = keyMap[ev.key];
-            if (dir && keysPressed[dir]) {
-                sendPress(dir, 'release');
-                keysPressed[dir] = false;
-            }
-        });
-
-        // New controls script
+        // Scale кнопки
         document.querySelectorAll('.scale-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
-                // TODO: Send scale to server
-                console.log('Scale changed to:', btn.dataset.scale);
+                sendPress('SCALE', 'press', parseFloat(btn.dataset.scale));
             });
         });
 
-        // Make coordinates editable - send on change
-        document.getElementById('xInput').addEventListener('change', (e) => {
-            // TODO: Send new X coord to server
-            console.log('New X:', e.target.value);
-        });
-        document.getElementById('yInput').addEventListener('change', (e) => {
-            // TODO: Send new Y coord to server
-            console.log('New Y:', e.target.value);
+        // Поля ввода
+        ['xInput', 'yInput', 'speed', 'stepLength'].forEach(id => {
+            const el = document.getElementById(id);
+            el.addEventListener('change', e => {
+                sendPress(id.toUpperCase(), 'press', parseFloat(e.target.value));
+            });
         });
 
+        // Кнопка Применить
         document.getElementById('zeroBtn').addEventListener('click', () => {
-            // TODO: Apply/Zero coordinates
-            document.getElementById('xInput').value = '0.00';
-            document.getElementById('yInput').value = '0.00';
-            console.log('Applied/Zeroed coordinates');
+            sendPress('ZERO', 'press');
         });
-
-        // Simulate real-time updates (placeholder)
-        setInterval(() => {
-            // Mock updates - in real, fetch from server
-            const x = parseFloat(document.getElementById('xInput').value) + (Math.random() - 0.5) * 0.1;
-            const y = parseFloat(document.getElementById('yInput').value) + (Math.random() - 0.5) * 0.1;
-            document.getElementById('xInput').value = x.toFixed(2);
-            document.getElementById('yInput').value = y.toFixed(2);
-        }, 1000);
     </script>
 </body>
 

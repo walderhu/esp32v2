@@ -3,7 +3,7 @@ HOST = 192.168.0.92
 PASS = 1234
 CLI = python tools/webrepl_client.py
 RUN := $(CLI) -p $(PASS) $(HOST) -e 
-.PHONY: put get ls repl deploy flash
+.PHONY: put get ls repl deploy flash server
 FILE := $(word 2, $(MAKECMDGOALS))
 default: repl
 
@@ -53,7 +53,6 @@ get:
 
 
 HASHFILE := .hash.local
-# DEPLOYIGNORE := .hash.local .hash.local.new Makefile .vscode .gitignore .git trash server nanoshim modules tools portal.py serva2.py 
 DEPLOYIGNORE := $(shell cat .deployignore | tr '\n' ' ')
 DEPLOYIGNORE_FIND_EXCLUDE := $(foreach f,$(DEPLOYIGNORE),-name $(f) -o) -false
 
@@ -184,3 +183,5 @@ gg:
 	@$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()"
 # 	@$(MAKE) --no-print-directory repl
 
+server:
+	$(MAKE) -C server
