@@ -1,13 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import sys
-import os
-import struct
-import traceback
-import time
-import select
-import termios
-
+import sys, os, struct, traceback, time, select, termios
 try: import usocket as socket
 except ImportError: import socket
 
@@ -25,10 +18,7 @@ WEBREPL_FRAME_BIN = 0x82
 def debugmsg(msg):
     if DEBUG: print(msg)
 
-
-
 class websocket:
-
     def __init__(self, s):
         self.s = s
         self.buf = b""

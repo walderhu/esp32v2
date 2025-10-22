@@ -179,8 +179,8 @@ flash:
 FILE = test2.py
 MODULE = $(basename $(FILE))
 gg:
-	$(RUN) "import machine; machine.soft_reset()"; sleep 0.1
-	$(MAKE) --no-print-directory put FILE="$(FILE)"
-	$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()"
-	$(MAKE) --no-print-directory repl
+	@$(RUN) "import machine; machine.soft_reset()"; sleep 0.5
+	@$(MAKE) --no-print-directory put FILE="$(FILE)"
+	@$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()"
+# 	@$(MAKE) --no-print-directory repl
 
