@@ -4,16 +4,19 @@ import sys
 import os
 import struct
 import traceback
-import time
-import select
-import termios
 
-try: import usocket as socket
-except ImportError: import socket
+try:
+    import usocket as socket
+except ImportError:
+    import socket
 
+# Define to 1 to use builtin "uwebsocket" module of MicroPython
 USE_BUILTIN_UWEBSOCKET = 0
+# Treat this remote directory as a root for file transfers
 SANDBOX = ""
+#SANDBOX = "/tmp/webrepl/"
 DEBUG = 0
+
 WEBREPL_REQ_S = "<2sBBQLH64s"
 WEBREPL_PUT_FILE = 1
 WEBREPL_GET_FILE = 2
@@ -23,73 +26,72 @@ WEBREPL_FRAME_BIN = 0x82
 
 
 def debugmsg(msg):
-    if DEBUG: print(msg)
+    if DEBUG:
+        print(msg)
 
 
+if USE_BUILTIN_UWEBSOCKET:
+    from uwebsocket import websocket
+else:
+    class websocket:
 
-class websocket:
+        def __init__(self, s):
+            self.s = s
+            self.buf = b""
 
-    def __init__(self, s):
-        self.s = s
-        self.buf = b""
+        def write(self, data, frame=WEBREPL_FRAME_BIN):
+            l = len(data)
+            if l < 126:
+                hdr = struct.pack(">BB", frame, l)
+            else:
+                hdr = struct.pack(">BBH", frame, 126, l)
+            self.s.send(hdr)
+            self.s.send(data)
 
-    def write(self, data, frame=WEBREPL_FRAME_BIN):
-        l = len(data)
-        if l < 126:
-            hdr = struct.pack(">BB", frame, l)
-        else:
-            hdr = struct.pack(">BBH", frame, 126, l)
-        self.s.send(hdr)
-        self.s.send(data)
+        def recvexactly(self, sz):
+            res = b""
+            while sz:
+                data = self.s.recv(sz)
+                if not data:
+                    break
+                res += data
+                sz -= len(data)
+            return res
 
-    def recvexactly(self, sz):
-        res = b""
-        while sz:
-            data = self.s.recv(sz)
-            if not data:
-                break
-            res += data
-            sz -= len(data)
-        return res
-
-    def read(self, size, text_ok=False):
-        if not self.buf:
-            while True:
-                hdr = self.recvexactly(2)
-                if len(hdr) != 2:
-                    raise AssertionError("Websocket header truncated")
-                fl, sz = struct.unpack(">BB", hdr)
-                if sz == 126:
+        def read(self, size, text_ok=False):
+            if not self.buf:
+                while True:
                     hdr = self.recvexactly(2)
                     if len(hdr) != 2:
-                        raise AssertionError("Websocket extended header truncated")
-                    (sz,) = struct.unpack(">H", hdr)
-                if fl == 0x82:
-                    break
-                if text_ok and fl == 0x81:
-                    break
-                debugmsg("Got unexpected websocket record of type %x, skipping it" % fl)
-                while sz:
-                    skip = self.s.recv(sz)
-                    debugmsg("Skip data: %s" % skip)
-                    sz -= len(skip)
-            data = self.recvexactly(sz)
-            if len(data) != sz:
-                raise AssertionError("Websocket payload truncated")
-            self.buf = data
+                        raise AssertionError("Websocket header truncated")
+                    fl, sz = struct.unpack(">BB", hdr)
+                    if sz == 126:
+                        hdr = self.recvexactly(2)
+                        if len(hdr) != 2:
+                            raise AssertionError("Websocket extended header truncated")
+                        (sz,) = struct.unpack(">H", hdr)
+                    if fl == 0x82:
+                        break
+                    if text_ok and fl == 0x81:
+                        break
+                    debugmsg("Got unexpected websocket record of type %x, skipping it" % fl)
+                    while sz:
+                        skip = self.s.recv(sz)
+                        debugmsg("Skip data: %s" % skip)
+                        sz -= len(skip)
+                data = self.recvexactly(sz)
+                if len(data) != sz:
+                    raise AssertionError("Websocket payload truncated")
+                self.buf = data
 
-        d = self.buf[:size]
-        self.buf = self.buf[size:]
-        if len(d) != size:
-            raise AssertionError("Requested %d bytes, got %d" % (size, len(d)))
-        return d
+            d = self.buf[:size]
+            self.buf = self.buf[size:]
+            if len(d) != size:
+                raise AssertionError("Requested %d bytes, got %d" % (size, len(d)))
+            return d
 
-    def ioctl(self, req, val):
-        assert req == 9 and val == 2
-
-
-
-
+        def ioctl(self, req, val):
+            assert req == 9 and val == 2
 
 
 def login(ws, passwd):
@@ -124,6 +126,8 @@ def get_ver(ws):
 
 
 def do_repl(ws):
+    import termios, select
+
     class ConsolePosix:
         def __init__(self):
             self.infd = sys.stdin.fileno()
@@ -263,6 +267,7 @@ Sec-WebSocket-Key: foo\r
         l = cl.readline()
         if l == b"\r\n":
             break
+#        sys.stdout.write(l)
 
 
 
@@ -274,88 +279,101 @@ Sec-WebSocket-Key: foo\r
 
 
 
-def reset_esp(ws):
-    print("[sending Ctrl+C before reset...]")
-    exec_code(ws, "__KEYBOARD_INTERRUPT__")
-    print("[sending reset command...]")
-    ws.write(b"import machine; machine.reset()\r", WEBREPL_FRAME_TXT)
-    print("[reset command sent]")
-
-def keyboard_interrupt(ws):
-    ws.write(b'\x03', WEBREPL_FRAME_TXT)  # Ctrl+C
-    print("[sent Ctrl+C to interrupt running script]")
-    try:
-        sock = ws.s
-        buf = b""
-        start = time.time()
-        while time.time() - start < 2:
-            r, _, _ = select.select([sock], [], [], 0.1)
-            if r:
-                buf += ws.read(1, text_ok=True)
-        if buf:
-            sys.stdout.buffer.write(buf)
-            sys.stdout.buffer.flush()
-    except: pass
-    
-
-def prepare_repl_code(code: str) -> bytes:
-    # объединяем строки, разделённые \
-    code = code.replace('\\\n', ' ')
-    # ищем блоки с :
-    pos = code.rfind(':')
-    if pos == -1:
-        # нет блока — разбиваем по ; и strip
-        lines = []
-        for part in code.split(';'):
-            part = part.strip()
-            if part:
-                lines.append(part)
-        payload = '\r'.join(lines) + '\r'
-    else:
-        # блок с :
-        pos_semi = code.rfind(';', 0, pos)
-        header_start = 0 if pos_semi == -1 else pos_semi + 1
-        header = code[header_start:pos + 1].strip()
-        body_raw = code[pos + 1:].strip()
-        body_parts = [p.lstrip() for p in body_raw.split(';') if p.strip()]
-        body_lines = ['    ' + p for p in body_parts]
-        prefix = code[:pos_semi] if pos_semi != -1 else ''
-        simple_lines = [p.strip() for p in prefix.split(';') if p.strip()]
-        all_lines = simple_lines + [header] + body_lines
-        payload = '\r'.join(all_lines) + '\r\r'
-    return payload.encode('utf-8')
 
 
-def exec_code(ws, code, idle_timeout=0.4):
-    if "machine.reset" in code or "__RESET__" in code:
-        reset_esp(ws); return
+
+
+
+
+
+
+
+
+
+
+def exec_code(ws, code, done_marker="<<<WEBREPL_DONE>>>", idle_timeout=0.4):
+    """
+    Send code and wait for a marker or idle timeout.
+    """
+    import time  
+    import select
+
+    if "machine.reset" in code:
+        print("[sending Ctrl+C before reset...]")
+        exec_code(ws, "__KEYBOARD_INTERRUPT__")
+        print("[sending reset command...]")
+        ws.write(b"import machine; machine.reset()\r", WEBREPL_FRAME_TXT)
+        print("[reset command sent]")
+        return
+
+    # NEW: Check if we want to send Ctrl+C (KeyboardInterrupt)
     if code.strip() == "__KEYBOARD_INTERRUPT__":
-        keyboard_interrupt(ws); return
+        ws.write(b'\x03', WEBREPL_FRAME_TXT)  # Ctrl+C
+        print("[sent Ctrl+C to interrupt running script]")
+        try:
+            sock = ws.s
+            buf = b""
+            start = time.time()
+            while time.time() - start < 2:
+                r, _, _ = select.select([sock], [], [], 0.1)
+                if r:
+                    buf += ws.read(1, text_ok=True)
+            if buf:
+                sys.stdout.buffer.write(buf)
+                sys.stdout.buffer.flush()
+        except: pass
+        return
 
-    ws.write(prepare_repl_code(code), WEBREPL_FRAME_TXT)
+    payload = code + "\rprint(%r)\r" % done_marker
+    ws.write(payload.encode("utf-8"), WEBREPL_FRAME_TXT)
 
     start = time.time()
     buf = b""
+    marker_bytes = done_marker.encode("utf-8")
     sock = ws.s
-    while True:
-        r, _, _ = select.select([sock], [], [], idle_timeout)
-        if not r: break
-        try:
-            b = ws.read(1, text_ok=True)
-        except AssertionError:
-            break
-        if not b: break
-        buf += b
-        if time.time() - start > 30: break
+
+    try:
+        while True:
+            r, _, _ = select.select([sock], [], [], idle_timeout)
+            if not r:
+                break
+            try:
+                b = ws.read(1, text_ok=True)
+            except AssertionError:
+                break
+            if not b:
+                break
+            buf += b
+            if marker_bytes in buf:
+                idx = buf.find(marker_bytes)
+                out = buf[:idx]
+                try:
+                    sys.stdout.buffer.write(out)
+                    sys.stdout.buffer.flush()
+                except Exception:
+                    sys.stdout.write(out.decode('utf-8', 'replace'))
+                    sys.stdout.flush()
+                return
+            if time.time() - start > 30:
+                break
+    except KeyboardInterrupt:
+        pass
 
     if buf:
         try:
             sys.stdout.buffer.write(buf)
             sys.stdout.buffer.flush()
         except Exception:
-            sys.stdout.write(buf.decode("utf-8", "replace"))
+            sys.stdout.write(buf.decode('utf-8', 'replace'))
             sys.stdout.flush()
-
+            
+            
+            
+            
+            
+            
+            
+            
             
             
             
@@ -394,14 +412,20 @@ def error(msg):
 
 
 def parse_remote(remote):
-    if ":" not in remote: return (remote, 8266, "/")
+    # Input like "host:port:path" or "host:path" or "host"
+    if ":" not in remote:
+        return (remote, 8266, "/")
+    # split host:rest
     hostport, fname = remote.split(":", 1)
-    if fname == "": fname = "/"
+    if fname == "":
+        fname = "/"
     host = hostport
     port = 8266
+    # allow host:port (no path) if rest is digits
     if fname.isdigit():
         port = int(fname)
         fname = "/"
+    # if host contains colon (IPv6 style), user can pass " [..]" - keep simple
     if ":" in hostport and hostport.count(":") == 1:
         host, port = hostport.split(":")
         port = int(port)

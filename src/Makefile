@@ -17,8 +17,20 @@ FILE := $(word 2, $(MAKECMDGOALS))
 
 default: repl
 
+# blink:
+# 	@$(RUN) "blink()" | sed '1,6d; $$d'
+
 blink:
-	@$(RUN) "blink()" | sed '1,6d; $$d'
+	@$(RUN) "\
+from machine import Pin; \
+from time import sleep; \
+led = Pin(2, Pin.OUT); \
+for i in range(5): \
+    led.value(1); sleep(0.1); \
+    led.value(0); sleep(0.1)"
+
+
+
 
 r:
 	@$(RUN) "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
@@ -105,16 +117,9 @@ d: deploy
 
 clean:
 	@rm -rf .hash.*
-	$(RUN) "delete_all()"
-	$(RUN) "import machine; machine.reset()"
-	sleep 5
-	$(RUN) "tree()"
-
-clean-esp: clean
-	mpremote run trash/delete_all.py
-	mpremote cp config.json boot.py webrepl_cfg.py :
-	mpremote run boot.py
-	mpremote ls
+	@$(RUN) "delete_all()"
+	@$(RUN) "import machine; machine.soft_reset()"; sleep 1
+	@$(RUN) "tree()"
 
 tree:
 	@$(RUN) "tree()" | sed '1,3d; $$d'
@@ -189,7 +194,6 @@ flash:
 FILE = serva2.py
 MODULE = $(basename $(FILE))
 gg:
-# 	@$(RUN) "__KEYBOARD_INTERRUPT__"  | sed '1,6d; $$d'
 	@$(RUN) "import machine; machine.soft_reset()"; sleep 1
 	@$(MAKE) --no-print-directory put FILE="$(FILE)"
 	@$(RUN) "import $(basename $(FILE)); asyncio.run($(basename $(FILE)).test())"
