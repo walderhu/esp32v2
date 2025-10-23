@@ -316,7 +316,7 @@ def prepare_repl_code(code: str) -> bytes:
     return payload.encode('utf-8')
 
 
-def exec_code(ws, code, idle_timeout=0.0):
+def exec_code(ws, code, idle_timeout=0.0, exit=False):
     if "machine.reset" in code or "__RESET__" in code:
         reset_esp(ws)
         return
@@ -347,7 +347,7 @@ def exec_code(ws, code, idle_timeout=0.0):
 
         if (time.time() - start) > 0.5 and (buf.endswith(b">>> ") or buf.endswith(b">")):
             print(); break
-    sys.exit(0)
+    if exit: sys.exit(0)
 
             
             
@@ -397,6 +397,7 @@ def main():
     code_to_exec = None
     args = sys.argv[1:]
     verbose = False
+    exit = False
 
     i = 0
     while i < len(args):
@@ -416,18 +417,14 @@ def main():
             verbose = True
             args.pop(i)
             continue
+        if args[i] in ('--exit'):
+            exit = True
+            args.pop(i)
+            continue
         i += 1
 
 
-
-
-
-
-
-    if not args and not code_to_exec:
-        help(1)
-
-    # If there is one arg and it looks like a host (without colon path) -> host for repl/exec
+    if not args and not code_to_exec: help(1)
     host_arg = args[0] if args else None
 
     try:
@@ -435,7 +432,6 @@ def main():
             import getpass
             passwd = getpass.getpass()
 
-        # Determine operation
         if code_to_exec:
             op = "exec"
             if not host_arg:
@@ -471,16 +467,15 @@ def main():
 
         ws = websocket(s)
         login(ws, passwd)
-        # print("Remote WebREPL version:", get_ver(ws)) #!
-
         ws.ioctl(9, 2)
 
         if op == "exec":
             try:
-                exec_code(ws, code_to_exec)
+                exec_code(ws, code_to_exec, exit=exit)
                 if verbose: do_repl(ws)
             except KeyboardInterrupt: 
-                exec_code(ws, '__KEYBOARD_INTERRUPT__')
+                keyboard_interrupt(ws)
+                print()
                 
         elif op == "repl":
             do_repl(ws)
@@ -493,7 +488,6 @@ def main():
         sys.exit(0)
 
     except Exception as e:
-        # Print traceback for debugging during deploy
         print("Error during operation:", str(e))
         traceback.print_exc()
         try:
