@@ -279,7 +279,7 @@ def keyboard_interrupt(ws):
         buf = b""
         start = time.time()
         while time.time() - start < 2:
-            r, _, _ = select.select([sock], [], [], 0.1)
+            r, _, _ = select.select([sock], [], [], 0)
             if r:
                 buf += ws.read(1, text_ok=True)
         if buf:
@@ -316,49 +316,39 @@ def prepare_repl_code(code: str) -> bytes:
     return payload.encode('utf-8')
 
 
-def exec_code(ws, code, idle_timeout=0.4):
+def exec_code(ws, code, idle_timeout=0.0):
     if "machine.reset" in code or "__RESET__" in code:
-        reset_esp(ws); return
+        reset_esp(ws)
+        return
     if code.strip() == "__KEYBOARD_INTERRUPT__":
-        keyboard_interrupt(ws); return
+        keyboard_interrupt(ws)
+        return
 
     ws.write(prepare_repl_code(code), WEBREPL_FRAME_TXT)
 
     start = time.time()
     buf = b""
     sock = ws.s
+
     while True:
+        # ждём данных от ESP
         r, _, _ = select.select([sock], [], [], idle_timeout)
-        if not r: break
-        try:
-            b = ws.read(1, text_ok=True)
-        except AssertionError:
-            break
-        if not b: break
-        buf += b
-        if time.time() - start > 30: break
+        if r:
+            try: b = ws.read(1, text_ok=True)
+            except AssertionError: break
+            if not b: break
+            buf += b
+            try:
+                sys.stdout.buffer.write(b)
+                sys.stdout.buffer.flush()
+            except Exception:
+                sys.stdout.write(b.decode("utf-8", "replace"))
+                sys.stdout.flush()
 
-    if buf:
-        try:
-            sys.stdout.buffer.write(buf)
-            sys.stdout.buffer.flush()
-        except Exception:
-            sys.stdout.write(buf.decode("utf-8", "replace"))
-            sys.stdout.flush()
+        if (time.time() - start) > 0.5 and (buf.endswith(b">>> ") or buf.endswith(b">")):
+            print(); break
+    sys.exit(0)
 
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
             
             
 
@@ -398,12 +388,17 @@ def parse_remote(remote):
     return (host, port, fname)
 
 
+
+
+
+
 def main():
     passwd = None
     code_to_exec = None
     args = sys.argv[1:]
+    verbose = False
+
     i = 0
-    # parse -p and -e options (order-independent)
     while i < len(args):
         if args[i] == '-p':
             if i + 1 >= len(args):
@@ -417,7 +412,17 @@ def main():
             code_to_exec = args.pop(i + 1)
             args.pop(i)
             continue
+        if args[i] in ('-v', '--verbose'):
+            verbose = True
+            args.pop(i)
+            continue
         i += 1
+
+
+
+
+
+
 
     if not args and not code_to_exec:
         help(1)
@@ -471,7 +476,12 @@ def main():
         ws.ioctl(9, 2)
 
         if op == "exec":
-            exec_code(ws, code_to_exec)
+            try:
+                exec_code(ws, code_to_exec)
+                if verbose: do_repl(ws)
+            except KeyboardInterrupt: 
+                exec_code(ws, '__KEYBOARD_INTERRUPT__')
+                
         elif op == "repl":
             do_repl(ws)
         elif op == "get":
