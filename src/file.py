@@ -53,12 +53,12 @@ DIR_PIN = 4
 step = Pin(STEP_PIN, Pin.OUT)
 dir_pin = Pin(DIR_PIN, Pin.OUT)
 
-dir_pin.value(1)
+dir_pin.value(0)
 
 # Настройка RMT для генерации импульсов на STEP
 rmt = esp32.RMT(0, pin=step, clock_div=80)  # 1 тик = 1 мкс
 
-def move_steps(num_steps, step_delay_us=1000):
+def move_steps(num_steps, step_delay_us=300):
     """
     Сделать num_steps шагов.
     step_delay_us — задержка между шагами (минимум ~2–5 мкс для большинства драйверов).
@@ -66,23 +66,21 @@ def move_steps(num_steps, step_delay_us=1000):
     if num_steps <= 0:
         return
     
-    # Каждый шаг = импульс: HIGH на 1–5 мкс, затем LOW
-    # Драйвер реагирует на фронт (обычно на rising edge)
     pulses = []
     for _ in range(num_steps):
-        pulses.append(5)   # 5 мкс HIGH — достаточно для фронта
-        pulses.append(step_delay_us - 5)  # остальное время — LOW
+        pulses.append(5) 
+        pulses.append(step_delay_us - 5) 
 
     rmt.write_pulses(pulses, 1)
-    # Ждём завершения (опционально)
     # total_time_ms = (num_steps * step_delay_us) // 1000
     # time.sleep_ms(max(1, total_time_ms + 1))
 
-# Пример: 200 шагов (полный оборот для двигателя 1.8°)
+
+
 
 en_pin = Pin(2, Pin.OUT)
 en_pin.off()     
 
-move_steps(2000, step_delay_us=2000)
+move_steps(5000)
 time.sleep(5)
 en_pin.on()     
