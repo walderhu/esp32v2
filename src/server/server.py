@@ -2,67 +2,98 @@ import socket
 import json
 import subprocess
 
-# Словари для колбеков
+
+
+import subprocess
+
+python = "/home/des/miniforge3/envs/esp/bin/python"
+webrepl = "/home/des/WORK/src/tools/webrepl_cli.py"
+port =  "-p 1234 192.168.0.92"
+pro_run = f"{python} {webrepl} {port} -e"
+
+def init():
+    command = (
+        "/home/des/miniforge3/envs/esp/bin/python "
+        "/home/des/WORK/src/tools/webrepl_cli.py "
+        "-p 1234 192.168.0.92 -e "
+        "\"import test2; "
+        "m2=test2.Stepper(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, limit_coord_cm=90); "
+        "m1=test2.Stepper(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, limit_coord_cm=60); "
+        "p = test2.Portal(m2, m1); "
+        "p.enable(True);\""
+    )
+    subprocess.run(command, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def exec(command):
+    command = f'{pro_run} "{command}"'
+    subprocess.run(command, shell=True, check=True)
+
+
+
+
+STEP = 5
+X = 0
+Y = 0
+
+
+
+
+
+
+
+
+
 PRESS_CALLBACKS = {}
 RELEASE_CALLBACKS = {}
 
-def run(command):
-    cmd = [
-        "python", "/home/des/WORK/src/tools/webrepl_cli.py",
-        "-p", "1234",
-        "192.168.0.92",
-        "-e", command
-    ]
-    try: subprocess.Popen(cmd)
-    except: print('Ошибка выполнения команды')
 
-# Регистрация колбеков
+
 def register_press(name, callback):
     PRESS_CALLBACKS[name.upper()] = callback
 
 def register_release(name, callback):
     RELEASE_CALLBACKS[name.upper()] = callback
 
-# Универсальные обработчики
 def on_press(direction, value=None):
+    global STEP, Y, X
     dir_up = direction.upper()
     print(f"▶ Нажата кнопка/поле: {dir_up}", "Value:" if value is not None else "", value if value is not None else "")
     
-    # Если есть колбек для нажатия — вызываем
     if dir_up in PRESS_CALLBACKS:
-        if value is not None:
-            PRESS_CALLBACKS[dir_up](value)
-        else:
-            PRESS_CALLBACKS[dir_up]()
+        if value is not None: PRESS_CALLBACKS[dir_up](value)
+        else: PRESS_CALLBACKS[dir_up]()
         return
+    
+    if dir_up == 'XINPUT': X = float(value)
+    if dir_up == 'YINPUT': Y = float(value)
+    if dir_up == 'ZERO': exec(f'p.x @= {X}; p.y @= {Y}')
 
-    # Старые стандартные кнопки
     match dir_up:
-        case 'UP': command = "asyncio.run(motor1.move(distance_cm=5, freq=10_000))"
-        case 'DOWN': command = "asyncio.run(motor1.move(distance_cm=-5, freq=10_000))"
-        case 'RIGHT': command = "asyncio.run(motor2.move(distance_cm=5, freq=10_000))"
-        case 'LEFT': command = "asyncio.run(motor2.move(distance_cm=-5, freq=10_000))"
-        case 'HOME': command = "go_home()"
+        case 'UP': command = f"p.y += {STEP}"
+        case 'DOWN': command = f"p.y -= {STEP}"
+        case 'RIGHT': command = f"p.x += {STEP}"
+        case 'LEFT': command = f"p.x -= {STEP}"
+        case 'HOME': command = "p.home()"
         case 'STOP': command = "go_stop()"
         case _: return
-    run(command)
+    exec(command)
 
-def on_release(direction):
-    dir_up = direction.upper()
-    print(f"◀ Отпущена кнопка: {dir_up}")
+# def on_release(direction):
+#     dir_up = direction.upper()
+#     print(f"◀ Отпущена кнопка: {dir_up}")
 
-    # Если есть колбек для отпускания — вызываем
-    if dir_up in RELEASE_CALLBACKS:
-        RELEASE_CALLBACKS[dir_up]()
-        return
+#     # Если есть колбек для отпускания — вызываем
+#     if dir_up in RELEASE_CALLBACKS:
+#         RELEASE_CALLBACKS[dir_up]()
+#         return
 
-    # Старые стандартные кнопки
-    match dir_up:
-        case 'UP'|'DOWN': command = "motor1.stop()"
-        case 'LEFT'|'RIGHT': command = "motor2.stop()"
-        case 'HOME'|'STOP': return
-        case _: return
-    run(command)
+#     # Старые стандартные кнопки
+#     match dir_up:
+#         case 'UP'|'DOWN': command = "motor1.stop()"
+#         case 'LEFT'|'RIGHT': command = "motor2.stop()"
+#         case 'HOME'|'STOP': return
+#         case _: return
+#     exec(command)
 
 # --- Сервер ---
 def serve():
@@ -88,7 +119,7 @@ def serve():
                     action = data.get('action')
                     value = data.get('value', None)
                     if action == 'press': on_press(dir, value)
-                    elif action == 'release': on_release(dir)
+                    # elif action == 'release': on_release(dir)
                 except Exception as e: 
                     print("Ошибка JSON:", e)
                 cl.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nOK")
@@ -119,7 +150,7 @@ def serve():
 
 
 if __name__ == "__main__":
-    # Пример: регистрируем колбеки
+    init()
     register_press("ZERO", lambda: print("Применить/Zero"))
     register_press("X", lambda v: print("X изменено:", v))
     register_press("Y", lambda v: print("Y изменено:", v))
@@ -132,7 +163,5 @@ if __name__ == "__main__":
     register_press("50", lambda: print("Scale 50"))
     register_press("100", lambda: print("Scale 100"))
 
-    try:
-        serve()
-    except KeyboardInterrupt:
-        pass
+    try: serve()
+    except KeyboardInterrupt: pass
