@@ -47,34 +47,35 @@ class Stepper:
         self.current_coord = 0
 
 
-    def move_accel(self, distance_cm, max_freq=None, min_freq=5000, accel_ratio=0.15):
+    def move_accel(self, distance_cm, max_freq=None, min_freq=5000, accel_ratio=0.15, accel_grain=10):
         if max_freq is None: max_freq = self.freq
         direction = distance_cm > 0; self.dir_pin.value(direction)
         if not (0 <= (self.current_coord + distance_cm) <= self.limit_coord_cm):
             raise ValueError('Выход за границы портала')
-        steps_total = int(abs(distance_cm) * 10 * self.steps_per_mm)
+        steps_total = int(abs(distance_cm) * self.steps_per_mm * 10)
         accel_steps = max(1, int(steps_total * accel_ratio))
         decel_steps = accel_steps
         cruise_steps = steps_total - accel_steps - decel_steps
-        
         from array import array
-        delay_us_list = array('H', (0 for _ in range(accel_steps)))
-        for step in range(accel_steps):
+        delay_us_list = array('H')
+        for step in range(0, accel_steps, accel_grain):
             ratio = step / accel_steps
             freq = min_freq + (max_freq - min_freq) * ratio
-            delay_us_list[step] = int(1_000_000 / freq / 2)
-
+            delay_us = int(1_000_000 / freq / 2)
+            repeats = min(accel_grain, accel_steps - step)
+            delay_us_list.extend([delay_us] * repeats)
         min_delay_us = int(1_000_000 / max_freq / 2)
-        for delay_us in delay_us_list: # --- Разгон ---
+        for delay_us in delay_us_list:
             self.step_pin.on(); time.sleep_us(delay_us)
             self.step_pin.off(); time.sleep_us(delay_us)
-        for _ in range(cruise_steps): # --- Крейсерская скорость ---
+        for _ in range(cruise_steps):
             self.step_pin.on(); time.sleep_us(min_delay_us)
             self.step_pin.off(); time.sleep_us(min_delay_us)
-        for delay_us in reversed(delay_us_list): # --- Торможение ---
+        for delay_us in reversed(delay_us_list):
             self.step_pin.on(); time.sleep_us(delay_us)
             self.step_pin.off(); time.sleep_us(delay_us)
-        self.current_coord = ((self.current_coord or 0) + (1 / self.steps_per_mm) * (1 if direction else -1) * steps_total) / 10
+        self.current_coord = (self.current_coord or 0) + distance_cm
+
 
 
     @property
@@ -146,5 +147,12 @@ def test():
     m1=Stepper(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, limit_coord_cm=60)
     
     with Portal(m2, m1) as p:
-        p.x.freq = 30_000
-        p.x.move_accel(90)
+        p.x.freq = 30_000; p.y.freq = 30_000
+        
+        p.x.move_accel(30)
+        p.y.move_accel(30)
+        
+        p.x.move_accel(-30)
+        p.y.move_accel(-30)
+        
+        
