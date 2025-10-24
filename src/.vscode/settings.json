@@ -1,7 +1,7 @@
 // settings.json
 {
     "python.analysis.extraPaths": [
-        ".../stubs"
+        "../stubs"
     ],
     "python.analysis.stubPath": "../stubs",
     "python.analysis.typeCheckingMode": "off",

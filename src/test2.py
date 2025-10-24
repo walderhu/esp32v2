@@ -126,8 +126,8 @@ class Portal:
         self.home()
         
     def home(self, freq=20_000):
-        self.x.home(freq=freq) 
-        self.y.home(freq=freq)
+        self.x.home(freq=20_000) 
+        self.y.home(freq=12_000)
 
     def enable(self, state=True):
         self.x.enable(state); self.y.enable(state)
@@ -160,6 +160,19 @@ def test():
         p.y -= 10
         print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
 
-        p.x @= 15
-        p.y @= 15
+        p.x @= 45
+        p.y @= 45
         print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+
+
+
+
+# python tools/webrepl_client.py -p 1234 192.168.0.92 -e  "\         
+# import test2; \
+# m2=test2.Stepper(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, limit_coord_cm=90); \
+# m1=test2.Stepper(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, limit_coord_cm=60); \
+# p = test2.Portal(m2, m1); \
+# p.enable(True); \
+# "
+
+# python tools/webrepl_client.py -p 1234 192.168.0.92 -e  "p.x += 10"

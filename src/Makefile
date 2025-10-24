@@ -11,7 +11,7 @@ default: repl
 # 	@$(RUN) "blink()" | sed '1,6d; $$d'
 
 blink:
-	@$(RUN) "\
+	$(RUN) "\
 from machine import Pin; \
 from time import sleep; \
 led = Pin(2, Pin.OUT); \
@@ -174,14 +174,13 @@ flash:
 	mpremote run $(src)/boot.py
 
 
+server:
+	$(MAKE) -C server
 
 FILE = test2.py
 MODULE = $(basename $(FILE))
 gg:
-	@$(RUN) "import machine; machine.soft_reset()"; sleep 0.5
+	@$(RUN) "import machine; machine.soft_reset()" > /dev/null; sleep 0.5
 	@$(MAKE) --no-print-directory put FILE="$(FILE)"
-	@$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()"
-# 	@$(MAKE) --no-print-directory repl
-
-server:
-	$(MAKE) -C server
+# 	-@$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()" --verbose --exit
+	-$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()" --verbose --exit
