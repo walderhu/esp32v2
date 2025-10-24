@@ -2,32 +2,62 @@ from machine import Pin
 import esp32, time, gc
 
 
+class Stepper:
+    count = 0
 
-dir_pin_y = Pin(15, Pin.OUT)
+    def __new__(cls, *args, **kwargs):
+        if cls.count > 7: raise RuntimeError('Нельзя создать больше 8 объектов')
+        obj = object.__new__(cls)   
+        obj.id = cls.count
+        cls.count += 1
+        return obj
+        
+    @staticmethod
+    def freq(freq_Mhz, ticks_per_pulse=1):
+        source_freq = 80_000_000
+        period_s = 1 / (1000 * freq_Mhz)
+        clock_div = period_s * source_freq / (2 * ticks_per_pulse)
+        clock_div = min(255, max(1, clock_div))
+        clock_div = min(70, clock_div) ##
+        return int(clock_div)
 
-def move_steps(rmt, num_steps, step_delay_us=700, delay = 50, dir = 1):
-    dir_pin_y.value(dir)
-    # rmt.write_pulses((20, 20), 1)
-    
-    pulses = []
-    for _ in range(num_steps):
-        pulses.append(500) 
-        pulses.append(500) 
-        if len(pulses) > 60:
-            rmt.write_pulses(pulses, 0)
-            del pulses
-            pulses = []
-    else: rmt.write_pulses(pulses, 0)
-    del pulses
-    # gc.collect()
+    def __init__(self, dir_pin, en_pin, step_pin, invert_en=False, clock_div=80):
+        self.dir_pin = Pin(dir_pin, Pin.OUT)
+        self.rmt = esp32.RMT(self.id, pin=Pin(step_pin, Pin.OUT), clock_div=clock_div)  
+        self.en_pin = Pin(en_pin, Pin.OUT)
+        self.invert_en = invert_en
 
-rmt_y = esp32.RMT(1, pin=Pin(14, Pin.OUT), clock_div=80, tx_carrier=(1100, 50, 0))  
+    def enable(self, state=True):
+        if self.invert_en: state = not state
+        self.en_pin.value(state)
 
-en_pin_y = Pin(13, Pin.OUT)
-en_pin_y.on()     
+    def __enter__(self):
+        self.enable(True)
+        return self
 
-move_steps(rmt_y, 1_000, step_delay_us=800, dir=1)
-# time.sleep(2)
-# while rmt_y.wait_done(): pass
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.enable(False)
+        return False
 
-en_pin_y.on()     
+    def move(self, steps, step_delay_us=500, delay=50):
+        self.dir_pin.value(steps > 0); steps = abs(steps)
+        pulses = []
+        for _ in range(steps):
+            pulses.append(step_delay_us) 
+            pulses.append(step_delay_us - delay) 
+            if len(pulses) > 60:
+                self.rmt.write_pulses(pulses, 0)
+                del pulses
+                pulses = []
+        else: 
+            self.rmt.write_pulses(pulses, 0)
+        del pulses; gc.collect()
+
+
+def main():
+    stepper = Stepper(dir_pin=15, en_pin=13, step_pin=14, invert_en=True, clock_div=80)
+    with stepper:
+        stepper.move(-3000)
+        while not stepper.rmt.wait_done(): pass
+        
+main()
