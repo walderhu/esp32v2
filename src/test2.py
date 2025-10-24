@@ -95,7 +95,9 @@ class Stepper:
         move_coord = target_coord - self.current_coord
         self += move_coord
 
-    def __imatmul__(self, target_coord): return self.move_to(target_coord)
+    def __imatmul__(self, target_coord): 
+        self.move_to(target_coord)
+        return self
 
     def __enter__(self):
         self.enable(True)
@@ -123,8 +125,8 @@ class Portal:
         self.x = motor_x; self.y = motor_y
         self.home()
         
-    def home(self, freq=10_000):
-        self.x.home(freq=20_000) 
+    def home(self, freq=20_000):
+        self.x.home(freq=freq) 
         self.y.home(freq=freq)
 
     def enable(self, state=True):
@@ -148,11 +150,16 @@ def test():
     
     with Portal(m2, m1) as p:
         p.x.freq = 30_000; p.y.freq = 30_000
-        
-        p.x.move_accel(30)
-        p.y.move_accel(30)
-        
-        p.x.move_accel(-30)
-        p.y.move_accel(-30)
-        
-        
+        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+
+        p.x += 30
+        p.y += 30
+        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+
+        p.x -= 10
+        p.y -= 10
+        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+
+        p.x @= 15
+        p.y @= 15
+        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
