@@ -249,6 +249,9 @@ class RMT:
           2. duration — число; data — список уровней
           3. duration и data — списки одинаковой длины
         """
+        # duration у него идет HIGH LOW и тд время в us 
+        # то есть подаем структуру данных с четным количеством элементов
+        # каждый четный это будет время LOW а каждый нечетный будет HIGH
         print(f"[RMT] write_pulses(duration={duration}, data={data})")
 
     @staticmethod
