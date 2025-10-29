@@ -125,10 +125,6 @@ class Portal:
         self.x = motor_x; self.y = motor_y
         self.home()
         
-    def home(self, freq=20_000):
-        self.x.home(freq=20_000) 
-        self.y.home(freq=12_000)
-
     def enable(self, state=True):
         self.x.enable(state); self.y.enable(state)
     
@@ -143,6 +139,112 @@ class Portal:
         finally:
             self.enable(False); return False
             
+    def __ior__(self, coords):
+            """
+            Параллельное движение по двум осям: p |= (x_target, y_target)
+            """
+            target_x, target_y = coords
+            dx = target_x - self.x.current_coord
+            dy = target_y - self.y.current_coord
+
+            # Проверка границ
+            if not (0 <= target_x <= self.x.limit_coord_cm):
+                raise ValueError('Выход за границы X')
+            if not (0 <= target_y <= self.y.limit_coord_cm):
+                raise ValueError('Выход за границы Y')
+
+            # Подготовка направлений
+            dir_x = dx > 0
+            dir_y = dy > 0
+            self.x.dir_pin.value(dir_x)
+            self.y.dir_pin.value(dir_y)
+
+            steps_x = int(abs(dx) * self.x.steps_per_mm * 10)
+            steps_y = int(abs(dy) * self.y.steps_per_mm * 10)
+            max_steps = max(steps_x, steps_y)
+
+            # вычисляем задержку (по максимальной частоте)
+            freq = min(self.x.freq, self.y.freq)
+            delay_us = int(1_000_000 / freq / 2)
+
+            # Алгоритм Брезенхэма для синхронного шага
+            err_x = err_y = 0
+            acc_x = acc_y = 0
+
+            for i in range(max_steps):
+                step_x = False
+                step_y = False
+
+                if steps_x:
+                    acc_x += steps_x
+                    if acc_x >= max_steps:
+                        acc_x -= max_steps
+                        step_x = True
+
+                if steps_y:
+                    acc_y += steps_y
+                    if acc_y >= max_steps:
+                        acc_y -= max_steps
+                        step_y = True
+
+                if step_x:
+                    self.x.step_pin.on()
+                if step_y:
+                    self.y.step_pin.on()
+
+                # короткая пауза — только если хоть один шаг сделан
+                if step_x or step_y:
+                    time.sleep_us(delay_us)
+                    self.x.step_pin.off()
+                    self.y.step_pin.off()
+                    time.sleep_us(delay_us)
+
+            # Обновляем текущие координаты
+            self.x.current_coord = target_x
+            self.y.current_coord = target_y
+            return self
+        
+    
+    
+    def home(self, freq=None, *, direction=0, debounce_ms=100):
+        """Общий home для портала (оба мотора синхронно по концевикам)"""
+        if freq is None:
+            freq = min(self.x.freq, self.y.freq)
+
+        delay_us = int(1e6 / (2 * freq))
+        if not self.x.enabled or not self.y.enabled:
+            self.enable(True)
+
+        self.x.dir_pin.value(direction)
+        self.y.dir_pin.value(direction)
+
+        x_done = False
+        y_done = False
+
+        while not (x_done and y_done):
+            if not x_done:
+                if self.x.sw_pin.value() == 0:
+                    self.x.step_pin.on()
+                else:
+                    x_done = True
+            if not y_done:
+                if self.y.sw_pin.value() == 0:
+                    self.y.step_pin.on()
+                else:
+                    y_done = True
+
+            if not (x_done and y_done):
+                time.sleep_us(delay_us)
+                self.x.step_pin.off()
+                self.y.step_pin.off()
+                time.sleep_us(delay_us)
+
+        time.sleep_ms(debounce_ms)
+        self.x.current_coord = 0
+        self.y.current_coord = 0
+
+
+
 
 def test():
     m2=Stepper(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, limit_coord_cm=90)
@@ -152,17 +254,22 @@ def test():
         p.x.freq = 30_000; p.y.freq = 30_000
         print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
 
-        p.x += 30
-        p.y += 30
+        p |= (45, 45) 
         print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
 
-        p.x -= 10
-        p.y -= 10
+        p |= (45, 45) 
         print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+        # p.x += 30
+        # p.y += 30
+        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
 
-        p.x @= 45
-        p.y @= 45
-        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+        # p.x -= 10
+        # p.y -= 10
+        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+
+        # p.x @= 45
+        # p.y @= 45
+        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
 
 
 
