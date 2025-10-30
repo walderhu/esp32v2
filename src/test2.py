@@ -47,10 +47,10 @@ class Stepper:
         self.current_coord = 0
 
 
-    def move_accel(self, distance_cm, max_freq=None, min_freq=5000, accel_ratio=0.15, accel_grain=10):
+    def _move_accel(self, distance_cm, max_freq=None, min_freq=5000, accel_ratio=0.15, accel_grain=10):
         if max_freq is None: max_freq = self.freq
         direction = distance_cm > 0; self.dir_pin.value(direction)
-        if not (0 <= (self.current_coord + distance_cm) <= self.limit_coord_cm):
+        if not (0 <= (self.current_coord + distance_cm ) <= self.limit_coord_cm):
             raise ValueError('Выход за границы портала')
         steps_total = int(abs(distance_cm) * self.steps_per_mm * 10)
         accel_steps = max(1, int(steps_total * accel_ratio))
@@ -88,7 +88,7 @@ class Stepper:
     def __sub__(self, coord): return self.__add__(-coord)
     
     def __add__(self, coord): 
-        self.move_accel(distance_cm=coord)
+        self._move_accel(distance_cm=coord)
         return self
     
     def move_to(self, target_coord): 
@@ -96,6 +96,9 @@ class Stepper:
         self += move_coord
 
     def __imatmul__(self, target_coord): 
+        if not (0 <= target_coord <= self.limit_coord_cm):
+            raise ValueError('Выход за границы портала')
+        if target_coord == 0: self.home()
         self.move_to(target_coord)
         return self
 
@@ -118,15 +121,42 @@ class Stepper:
 
 
 class Portal:
-    def __init__(self, motor_x: Stepper, motor_y: Stepper):
-        self.x = motor_x; self.y = motor_y
+    def __init__(self, motor_x: Stepper, motor_y: Stepper, freq=30_000):
+        self._x = motor_x; self._y = motor_y
         self.home(freq_base=12_000)
+        self.freq = freq
         
     def enable(self, state=True):
-        self.x.enable(state); self.y.enable(state)
+        self._x.enable(state); self._y.enable(state)
     
     def __enter__(self):
         self.enable(True); return self
+
+    @property
+    def freq(self):
+        return (self._x.freq, self._y.freq)
+
+    @freq.setter
+    def freq(self, new_freq):
+        self._x.freq = new_freq
+        self._y.freq = new_freq
+   
+    @property
+    def x(self): return self._x.current_coord
+    @x.setter
+    def x(self, coord): self._x @= coord
+
+    @property
+    def y(self): return self._y.current_coord
+    @y.setter
+    def y(self, coord): self._y @= coord
+
+    @property
+    def coord(self): return (self.x, self.y)
+    
+    @coord.setter
+    def coord(self, new_coord): 
+        self |= new_coord
 
     def __exit__(self, exc_type, exc, tb):
         try:
@@ -141,26 +171,25 @@ class Portal:
             Параллельное движение по двум осям: p |= (x_target, y_target)
             """
             target_dx_cm, target_dy_cm = coords
-            dx_cm = target_dx_cm -  self.x.current_coord
-            dy_cm = target_dy_cm -  self.y.current_coord
+            dx_cm = target_dx_cm -  self._x.current_coord
+            dy_cm = target_dy_cm -  self._y.current_coord
             self.parallel_accel_move(dx_cm=dx_cm, dy_cm=dy_cm, accel_grain=20)
             return self
         
 
-
     def home(self, *, freq_base=None, speed_ratio=1.5, direction=0, debounce_ms=100):
-        if freq_base is None: freq_base = min(self.x.freq, self.y.freq)
+        if freq_base is None: freq_base = min(self._x.freq, self._y.freq)
         freq_x = int(freq_base * speed_ratio)
         freq_y = int(freq_base)
         delay_x_us = int(1_000_000 / (2 * freq_x))
         delay_y_us = int(1_000_000 / (2 * freq_y))
         delay_min = delay_x_us if delay_x_us < delay_y_us else delay_y_us
-        if not (self.x.enabled and self.y.enabled): self.enable(True)
-        self.x.dir_pin.value(direction); self.y.dir_pin.value(direction)
+        if not (self._x.enabled and self._y.enabled): self.enable(True)
+        self._x.dir_pin.value(direction); self._y.dir_pin.value(direction)
 
-        sx_on, sx_off = self.x.step_pin.on, self.x.step_pin.off
-        sy_on, sy_off = self.y.step_pin.on, self.y.step_pin.off
-        swx_val, swy_val = self.x.sw_pin.value, self.y.sw_pin.value
+        sx_on, sx_off = self._x.step_pin.on, self._x.step_pin.off
+        sy_on, sy_off = self._y.step_pin.on, self._y.step_pin.off
+        swx_val, swy_val = self._x.sw_pin.value, self._y.sw_pin.value
         x_done = False; y_done = False
         SCALE = 10_000
         step_ratio_x = int(speed_ratio * SCALE / (1 + speed_ratio))
@@ -191,8 +220,8 @@ class Portal:
                 t_next = time.ticks_add(now, delay_min)
 
         time.sleep_ms(debounce_ms)
-        self.x.current_coord = 0
-        self.y.current_coord = 0
+        self._x.current_coord = 0
+        self._y.current_coord = 0
 
 
 
@@ -248,8 +277,8 @@ class Portal:
     def _execute_parallel_runs(self, runs, steps_x, steps_y, steps_total):
         """Исполняет синхронное движение по X/Y по runlist."""
         acc_x = 0; acc_y = 0
-        sx_pin = self.x.step_pin
-        sy_pin = self.y.step_pin
+        sx_pin = self._x.step_pin
+        sy_pin = self._y.step_pin
         for delay_us, count in runs:
             for _ in range(count):
                 acc_x += steps_x; acc_y += steps_y
@@ -269,31 +298,31 @@ class Portal:
     def parallel_accel_move(self, dx_cm, dy_cm, max_freq=50_000, min_freq=5000,
                              accel_ratio=0.15, accel_grain=10):
         """Параллельное синхронное движение X/Y с accel/cruise/decel."""
-        if max_freq is None: max_freq = min(self.x.freq, self.y.freq)
-        target_x = self.x.current_coord + dx_cm
-        target_y = self.y.current_coord + dy_cm
-        if not (0 <= target_x <= self.x.limit_coord_cm): raise ValueError("Выход за границы X")
-        if not (0 <= target_y <= self.y.limit_coord_cm): raise ValueError("Выход за границы Y")
+        if max_freq is None: max_freq = min(self._x.freq, self._y.freq)
+        target_x = self._x.current_coord + dx_cm
+        target_y = self._y.current_coord + dy_cm
+        if not (0 <= target_x <= self._x.limit_coord_cm): raise ValueError("Выход за границы X")
+        if not (0 <= target_y <= self._y.limit_coord_cm): raise ValueError("Выход за границы Y")
 
         if target_x == 0:
-            self.x.home(freq=16_000)
+            self._x.home(freq=16_000)
             return self
         if target_y == 0:
-            self.y.home(freq=16_000)
+            self._y.home(freq=16_000)
             return self
 
-        dir_x = dx_cm > 0; self.x.dir_pin.value(dir_x)
-        dir_y = dy_cm > 0; self.y.dir_pin.value(dir_y)
+        dir_x = dx_cm > 0; self._x.dir_pin.value(dir_x)
+        dir_y = dy_cm > 0; self._y.dir_pin.value(dir_y)
 
-        steps_x = int(abs(dx_cm) * self.x.steps_per_mm * 10)
-        steps_y = int(abs(dy_cm) * self.y.steps_per_mm * 10)
+        steps_x = int(abs(dx_cm) * self._x.steps_per_mm * 10)
+        steps_y = int(abs(dy_cm) * self._y.steps_per_mm * 10)
         steps_total = max(steps_x, steps_y)
         if steps_total == 0: return self
 
         runs = self._build_runlist(steps_total, max_freq, min_freq, accel_ratio, accel_grain)
         self._execute_parallel_runs(runs, steps_x, steps_y, steps_total)
-        self.x.current_coord += dx_cm
-        self.y.current_coord += dy_cm
+        self._x.current_coord += dx_cm
+        self._y.current_coord += dy_cm
         return self
 
 
@@ -303,36 +332,12 @@ def test():
     m2=Stepper(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, limit_coord_cm=90)
     m1=Stepper(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, limit_coord_cm=60)
     
-    with Portal(m2, m1) as p:
-        p.x.freq = 50_000; p.y.freq = 50_000
-        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        p |= (45, 30)
-        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        # p |= (45, 30)
-        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        # p |= (0, 0)
-        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        # p |= (30, 0)
-        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        # p |= (0, 30)
-        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        # p |= (0, 30)
-        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        # p |= (30, 30)
-        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        # p |= (45, 30)
-        # p |= (40, 45)
+    with Portal(m2, m1, freq=20_000) as p:
+        print("X coord:", p.x, "Y coord:", p.y)
+        p.coord = (45, 30)
+        p.x = 20
+        p.y = 10
+        p.y += 20
 
-
-
-
-
-# python tools/webrepl_client.py -p 1234 192.168.0.92 -e  "\         
-# import test2; \
-# m2=test2.Stepper(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, limit_coord_cm=90); \
-# m1=test2.Stepper(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, limit_coord_cm=60); \
-# p = test2.Portal(m2, m1); \
-# p.enable(True); \
-# "
-
-# python tools/webrepl_client.py -p 1234 192.168.0.92 -e  "p.x += 10"
+        p.x = 0
+        p.y = 0
