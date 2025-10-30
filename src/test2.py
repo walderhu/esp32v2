@@ -120,7 +120,7 @@ class Stepper:
 class Portal:
     def __init__(self, motor_x: Stepper, motor_y: Stepper):
         self.x = motor_x; self.y = motor_y
-        self.home(freq=30_000)
+        self.home(freq_base=12_000)
         
     def enable(self, state=True):
         self.x.enable(state); self.y.enable(state)
@@ -147,36 +147,53 @@ class Portal:
             return self
         
 
-    def home(self, freq=None, *, direction=0, debounce_ms=100):
-        """Общий home для портала (X движется в 1.5 раза быстрее, чем Y)"""
-        if freq is None: freq = min(self.x.freq, self.y.freq)
-        delay_x_us = int(1e6 / (2 * (freq)))  # X быстрее
-        if not self.x.enabled or not self.y.enabled: self.enable(True)
-        self.x.dir_pin.value(direction)
-        self.y.dir_pin.value(direction)
+
+    def home(self, *, freq_base=None, speed_ratio=1.5, direction=0, debounce_ms=100):
+        if freq_base is None: freq_base = min(self.x.freq, self.y.freq)
+        freq_x = int(freq_base * speed_ratio)
+        freq_y = int(freq_base)
+        delay_x_us = int(1_000_000 / (2 * freq_x))
+        delay_y_us = int(1_000_000 / (2 * freq_y))
+        delay_min = delay_x_us if delay_x_us < delay_y_us else delay_y_us
+        if not (self.x.enabled and self.y.enabled): self.enable(True)
+        self.x.dir_pin.value(direction); self.y.dir_pin.value(direction)
+
+        sx_on, sx_off = self.x.step_pin.on, self.x.step_pin.off
+        sy_on, sy_off = self.y.step_pin.on, self.y.step_pin.off
+        swx_val, swy_val = self.x.sw_pin.value, self.y.sw_pin.value
         x_done = False; y_done = False
-        counter = 0 
+        SCALE = 10_000
+        step_ratio_x = int(speed_ratio * SCALE / (1 + speed_ratio))
+        step_ratio_y = int(SCALE / (1 + speed_ratio))
+        acc_x = 0; acc_y = 0
+        t_next = time.ticks_us()
+
         while not (x_done and y_done):
-            counter += 1
-            if not x_done:
-                if self.x.sw_pin.value() == 0:
-                    self.x.step_pin.on()
-                else: x_done = True
+            now = time.ticks_us()
+            if time.ticks_diff(now, t_next) >= 0:
+                acc_x += step_ratio_x
+                acc_y += step_ratio_y
 
-            if not y_done and counter % 2 == 0:
-                if self.y.sw_pin.value() == 0:
-                    self.y.step_pin.on()
-                else: y_done = True
+                if not x_done and acc_x >= SCALE:
+                    acc_x -= SCALE
+                    if swx_val() == 0:
+                        sx_on(); sx_off()
+                    else:
+                        x_done = True
 
-            if not (x_done and y_done):
-                time.sleep_us(delay_x_us)
-                self.x.step_pin.off()
-                self.y.step_pin.off()
-                time.sleep_us(delay_x_us)
+                if not y_done and acc_y >= SCALE:
+                    acc_y -= SCALE
+                    if swy_val() == 0:
+                        sy_on(); sy_off()
+                    else:
+                        y_done = True
+
+                t_next = time.ticks_add(now, delay_min)
 
         time.sleep_ms(debounce_ms)
         self.x.current_coord = 0
         self.y.current_coord = 0
+
 
 
     def _build_runlist(self, steps_total, max_freq, min_freq, accel_ratio, accel_grain):
@@ -289,22 +306,22 @@ def test():
     with Portal(m2, m1) as p:
         p.x.freq = 50_000; p.y.freq = 50_000
         print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        p |= (90, 60)
-        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
         p |= (45, 30)
-        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        p |= (0, 0)
-        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        p |= (30, 0)
-        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        p |= (0, 30)
-        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        p |= (0, 30)
-        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        p |= (30, 30)
-        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        p |= (45, 30)
-        p |= (40, 45)
+        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+        # p |= (45, 30)
+        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+        # p |= (0, 0)
+        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+        # p |= (30, 0)
+        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+        # p |= (0, 30)
+        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+        # p |= (0, 30)
+        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+        # p |= (30, 30)
+        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+        # p |= (45, 30)
+        # p |= (40, 45)
 
 
 
