@@ -1,6 +1,6 @@
 from machine import Pin
 import time
-import sys
+import sys, math
 
     
 class Stepper:
@@ -117,9 +117,6 @@ class Stepper:
 
 
 
-
-
-
 class Portal:
     def __init__(self, motor_x: Stepper, motor_y: Stepper):
         self.x = motor_x; self.y = motor_y
@@ -217,23 +214,28 @@ class Portal:
         self.x.current_coord = 0
         self.y.current_coord = 0
 
-    def parallel_accel_move(self, dx_cm, dy_cm, max_freq=None, min_freq=5000,
+
+    def parallel_accel_move(self, dx_cm, dy_cm, max_freq=50_000, min_freq=5000,
                              accel_ratio=0.15, accel_grain=10):
         """
         Параллельное синхронное движение X/Y с accel/cruise/decel.
         Акцент на минимальную память: delay-runlist вместо per-step массивов.
         """
-        if max_freq is None:
-            max_freq = min(self.x.freq, self.y.freq)
-
-        if not (0 <= (self.x.current_coord + dx_cm) <= self.x.limit_coord_cm):
-            raise ValueError("Выход за границы X")
-        if not (0 <= (self.y.current_coord + dy_cm) <= self.y.limit_coord_cm):
-            raise ValueError("Выход за границы Y")
-        dir_x = dx_cm > 0
-        dir_y = dy_cm > 0
-        self.x.dir_pin.value(dir_x)
-        self.y.dir_pin.value(dir_y)
+        if max_freq is None: max_freq = min(self.x.freq, self.y.freq)
+        target_x = self.x.current_coord + dx_cm
+        target_y = self.y.current_coord + dy_cm
+        if not (0 <= target_x <= self.x.limit_coord_cm): raise ValueError("Выход за границы X")
+        if not (0 <= target_y <= self.y.limit_coord_cm): raise ValueError("Выход за границы Y")
+        
+        if target_x == 0: 
+            self.x.home(freq=16_000)
+            return self
+        if target_y == 0: 
+            self.y.home(freq=16_000)
+            return self
+        
+        dir_x = dx_cm > 0; self.x.dir_pin.value(dir_x)
+        dir_y = dy_cm > 0; self.y.dir_pin.value(dir_y)
         # шаги (целые)
         steps_x = int(abs(dx_cm) * self.x.steps_per_mm * 10)
         steps_y = int(abs(dy_cm) * self.y.steps_per_mm * 10)
@@ -249,8 +251,8 @@ class Portal:
 
         # минимальные/максимальные задержки (в микросекундах)
         min_delay_us = int(1_000_000 / max_freq / 2)
-        max_delay_us = int(1_000_000 / min_freq / 2)
-        delta = max_delay_us - min_delay_us
+        # max_delay_us = int(1_000_000 / min_freq / 2)
+        # delta = max_delay_us - min_delay_us
 
         # --- Построим компактный runlist: список (delay_us, count) ---
         # Разгон: лесенка с шагом accel_grain
@@ -282,8 +284,7 @@ class Portal:
             remaining -= take
             idx += 1
         # mirror
-        for d, c in reversed(accel_part):
-            runs.append((d, c))
+        for d, c in reversed(accel_part): runs.append((d, c))
 
         # Убедимся, что суммарно steps == steps_total (инвариант)
         total_runs_steps = sum(c for _, c in runs)
@@ -295,28 +296,21 @@ class Portal:
             extra = total_runs_steps - steps_total
             d, c = runs[-1]
             runs[-1] = (d, c - extra)
-            if runs[-1][1] == 0:
-                runs.pop()
+            if runs[-1][1] == 0: runs.pop()
 
         # --- Подготовка для шага: целочисленный "Bresenham-like" счетчик ---
         # В цикле будем делать:
         # acc_x += steps_x; if acc_x >= steps_total: acc_x -= steps_total; step_x = True
-        acc_x = 0
-        acc_y = 0
-
+        acc_x = 0; acc_y = 0
         # Локальные пины для скорости
-        sx_pin = self.x.step_pin
-        sy_pin = self.y.step_pin
+        sx_pin = self.x.step_pin; sy_pin = self.y.step_pin
         # --- Основной цикл: проходим runs, внутри — count шагов с одним delay ---
         for delay_us, count in runs:
             # count — обычно accel_grain или cruise chunk; небольшое число
             for _ in range(count):
                 # вычисления — целые операции (быстро)
-                acc_x += steps_x
-                acc_y += steps_y
-
-                step_x = False
-                step_y = False
+                acc_x += steps_x; acc_y += steps_y
+                step_x = False; step_y = False
                 if acc_x >= steps_total:
                     acc_x -= steps_total
                     step_x = True
@@ -338,11 +332,6 @@ class Portal:
 
 
 
-
-
-
-
-
 def test():
     m2=Stepper(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, limit_coord_cm=90)
     m1=Stepper(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, limit_coord_cm=60)
@@ -350,32 +339,23 @@ def test():
     with Portal(m2, m1) as p:
         p.x.freq = 50_000; p.y.freq = 50_000
         print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-        # p.x @= 90
-        # p.y @= 60
-        # p.home(20_000)
-        # p.parallel_accel_move(90, 60, max_freq=50_000, min_freq=4000, accel_grain=20)
         p |= (90, 60)
+        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
         p |= (45, 30)
+        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
         p |= (0, 0)
+        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
         p |= (30, 0)
+        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
         p |= (0, 30)
-        p |= (0, 0)
+        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+        p |= (0, 30)
+        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
         p |= (30, 30)
-        # p.parallel_accel_move(-10, -5, accel_grain=20)
-        # p |= (45, 45) 
-        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+        print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
+        p |= (45, 30)
+        p |= (40, 45)
 
-        # p.x += 30
-        # p.y += 30
-        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-
-        # p.x -= 10
-        # p.y -= 10
-        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
-
-        # p.x @= 45
-        # p.y @= 45
-        # print("X coord:", p.x.current_coord, "Y coord:", p.y.current_coord)
 
 
 
