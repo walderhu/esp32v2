@@ -1,7 +1,7 @@
 from machine import Pin
 import time
 import sys, math
-
+from machine import Timer
     
 class Stepper:
     def __init__(self, step_pin, dir_pin, en_pin, sw_pin,
@@ -121,19 +121,56 @@ class Stepper:
 
 
 class Portal:
-    def __init__(self, motor_x: Stepper, motor_y: Stepper, freq=30_000):
+    def __init__(self, motor_x: Stepper, motor_y: Stepper, freq=30_000, auto_disable_sec=None):
         self._x = motor_x; self._y = motor_y
-        self.home(freq_base=12_000)
         self.freq = freq
+        self.last_active = time.ticks_ms()
+        self.auto_disable_sec = auto_disable_sec
+        self._should_disable = False
+        self.home(freq_base=12_000)
+        self._auto_timer = Timer(0)
+        if auto_disable_sec is not None: self._start_auto_timer()
+        self.enable()
         
-    def enable(self, state=True):
-        self._x.enable(state); self._y.enable(state)
+    def update_activity(self):
+        """Обновление таймера активности при движении"""
+        self.last_active = time.ticks_ms()
+        
+    def _start_auto_timer(self):
+        """Запуск таймера автоотключения"""
+        self._auto_timer.init(period=1000, mode=Timer.PERIODIC,
+                              callback=lambda t: self.check_auto_disable())
+        
+    def stop_auto_timer(self):
+        """Полностью остановить таймер автоотключения"""
+        self._auto_timer.deinit()
 
-    def disable(self): return self.enable(False)
+    def wait(self, sec):
+        """Ждем указанное количество секунд без вмешательства таймера автоотключения"""
+        self.stop_auto_timer()
+        time.sleep(sec)
+        self._start_auto_timer()
+        
+    def check_auto_disable(self):
+        elapsed_ms = time.ticks_diff(time.ticks_ms(), self.last_active)
+        if elapsed_ms > self.auto_disable_sec * 1000:
+            self.home(freq_base=12_000)
+            self.disable()
+            self._auto_timer.deinit()
+
+            
+    def enable(self, state=True):
+        self._x.enable(state)
+        self._y.enable(state)
+        if state:
+            self.update_activity()
+
+    def disable(self): 
+        return self.enable(False)
     
     def __enter__(self):
         self.enable(True); return self
-
+    
     @property
     def freq(self):
         return (self._x.freq, self._y.freq)
@@ -145,13 +182,18 @@ class Portal:
    
     @property
     def x(self): return self._x.current_coord
+    
     @x.setter
-    def x(self, coord): self._x @= coord
+    def x(self, coord): 
+        self._x @= coord
+        self.update_activity()
 
     @property
     def y(self): return self._y.current_coord
     @y.setter
-    def y(self, coord): self._y @= coord
+    def y(self, coord): 
+        self._y @= coord
+        self.update_activity()
 
     @property
     def coord(self): return (self.x, self.y)
@@ -159,6 +201,7 @@ class Portal:
     @coord.setter
     def coord(self, new_coord): 
         self |= new_coord
+        self.update_activity()
 
     def __exit__(self, exc_type, exc, tb):
         try:
@@ -176,6 +219,7 @@ class Portal:
             dx_cm = target_dx_cm -  self._x.current_coord
             dy_cm = target_dy_cm -  self._y.current_coord
             self.parallel_accel_move(dx_cm=dx_cm, dy_cm=dy_cm, accel_grain=20)
+            self.update_activity()
             return self
         
 
@@ -224,6 +268,7 @@ class Portal:
         time.sleep_ms(debounce_ms)
         self._x.current_coord = 0
         self._y.current_coord = 0
+        self.update_activity()
 
 
 
@@ -325,21 +370,16 @@ class Portal:
         self._execute_parallel_runs(runs, steps_x, steps_y, steps_total)
         self._x.current_coord += dx_cm
         self._y.current_coord += dy_cm
+        self.update_activity()
         return self
-
-
 
 
 def test():
     m2=Stepper(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, limit_coord_cm=90)
     m1=Stepper(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, limit_coord_cm=60)
     
-    with Portal(m2, m1, freq=20_000) as p:
-        print("X coord:", p.x, "Y coord:", p.y)
-        p.coord = (45, 30)
-        p.x = 20
-        p.y = 10
-        p.y += 20
-
-        p.x = 0
-        p.y = 0
+    p = Portal(m2, m1, freq=20_000, auto_disable_sec=60)
+    p.coord = (45, 30)
+    p.x = 20
+    p.y = 10
+    p.y += 20
