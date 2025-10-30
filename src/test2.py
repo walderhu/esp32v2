@@ -128,6 +128,8 @@ class Portal:
         
     def enable(self, state=True):
         self._x.enable(state); self._y.enable(state)
+
+    def disable(self): return self.enable(False)
     
     def __enter__(self):
         self.enable(True); return self
