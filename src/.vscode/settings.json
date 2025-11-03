@@ -20,6 +20,12 @@
         "config.json": true,
         ".hash.local": true,
         "nanoshim": true,
+        ".deployignore": true,
+        "tools": true,
+        // ".vscode": true,
+        "temp": true,
+        // "": true,
+        // "": true,
     },
     "python.defaultInterpreterPath": "/home/des/miniforge3/envs/esp/bin/python",
     "terminal.integrated.profiles.linux": {

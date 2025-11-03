@@ -16,7 +16,7 @@ def init():
         "\"import test2; "
         "m2=test2.Stepper(step_pin=16, dir_pin=4, en_pin=2, sw_pin=33, limit_coord_cm=90); "
         "m1=test2.Stepper(step_pin=14, dir_pin=15, en_pin=13, sw_pin=27, limit_coord_cm=60); "
-        "m1.freq = 18_000; m2.freq = 18_000; "
+        "m1.freq = 20_000; m2.freq = 20_000; "
         "p = test2.Portal(m2, m1); "
         "p.enable(True);\""
     )
@@ -51,6 +51,19 @@ def register_release(name, callback):
 # --- Обработчик нажатий ---
 def on_press(direction, value=None):
     global STEP, X, Y
+    
+    # Получаем координаты с ESP
+    try:
+        result = subprocess.run(
+            f'{pro_run} "print(p.coord)" | awk \'/\\([0-9]/ {{print $0}}\'',
+            shell=True,
+            capture_output=True,
+            text=True
+        )
+        X, Y = eval(result.stdout.strip())
+    except Exception as e:
+        print("Ошибка обновления координат:", e)
+
     dir_up = direction.upper()
     print(f"▶ Нажата кнопка/поле: {dir_up}", "Value:" if value is not None else "", value if value is not None else "")
 
@@ -74,7 +87,7 @@ def on_press(direction, value=None):
     # При нажатии ZERO — отправляем координаты
     if dir_up == 'ZERO':
         print(f"📡 Перемещение к X={X}, Y={Y}")
-        exec(f"p.x @= {X}; p.y @= {Y}")
+        exec(f"p |= ({X}, {Y})")
         return
 
     # Если есть пользовательский колбек
@@ -96,6 +109,21 @@ def on_press(direction, value=None):
         case _: return
 
     exec(command)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # --- HTTP сервер ---
@@ -148,6 +176,28 @@ def serve():
                     cl.sendall(css)
                 except:
                     cl.send(b"HTTP/1.1 404 Not Found\r\n\r\n")
+                    
+            elif req.startswith('GET /coords'):
+                global X, Y
+                try:
+                    result = subprocess.run(
+                        f'{pro_run} "print(p.coord)"',
+                        shell=True,
+                        capture_output=True,
+                        text=True,
+                        timeout=5  # 1 секунда
+                    )
+                except subprocess.TimeoutExpired:
+                    print("⚠️ Таймаут WebREPL")
+                    return
+                except BrokenPipeError:
+                    print("⚠️ Соединение WebREPL закрыто")
+                    return
+                coords = json.dumps({"x": X, "y": Y})
+                cl.send(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n")
+                cl.sendall(coords.encode())
+
+
             else:
                 cl.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\n\r\n")
                 cl.sendall(HTML.encode())

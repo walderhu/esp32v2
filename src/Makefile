@@ -183,4 +183,4 @@ gg:
 	@$(RUN) "import machine; machine.soft_reset()" > /dev/null; sleep 0.5
 	@$(MAKE) --no-print-directory put FILE="$(FILE)"
 # 	-@$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()" --verbose --exit
-	-$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()" --verbose --exit
+	-$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()" --verbose 

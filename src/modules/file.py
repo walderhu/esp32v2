@@ -1,6 +1,6 @@
+import sys
 from machine import Pin
 import esp32, time, gc
-
 
 class Stepper:
     count = 0
@@ -17,6 +17,7 @@ class Stepper:
         self.dir_pin = Pin(dir_pin, Pin.OUT)
         self.rmt = esp32.RMT(self.id, pin=Pin(step_pin, Pin.OUT), clock_div=clock_div)  
         self.en_pin = Pin(en_pin, Pin.OUT)
+        self.clock_div = clock_div
 
     def enable(self, state=True):
         if self.invert_en: state = not state
@@ -26,27 +27,31 @@ class Stepper:
         self.enable(True)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.enable(False)
-        return False
+    def __exit__(self, exc_type, exc, tb):
+        try:
+            if exc_type:
+                print("Exception caught in __exit__:")
+                sys.print_exception(exc, sys.stdout)
+        finally:
+            self.enable(False); return False
 
     def move(self, steps, step_delay_us=500):
         direction = steps > 0; steps = abs(steps)
         self.dir_pin.value(direction)
-        tick_us = self.rmt.clock_div() / 80
+        tick_us = self.clock_div / 80 
         step_ticks = min(32767, (max(0, int(step_delay_us / (tick_us)))))
         pulse = (step_ticks, step_ticks) # HIGH and LOW for 1 step
         for _ in range(steps):
-            self.rmt.write_pulses(pulse)
-            while not self.rmt.wait_done(): pass
+            self.rmt.write_pulses(pulse, 1)
+            self.rmt.wait_done()
 
 
 def main():
     stepper = Stepper(dir_pin=15, en_pin=13, step_pin=14, invert_en=True, clock_div=80)
     with stepper:
-        stepper.move(200, step_delay_us=500) # 635
+        stepper.move(20000, step_delay_us=25) # 635
         time.sleep(1)
-        stepper.move(-200, step_delay_us=500)
+        stepper.move(-20000, step_delay_us=25)
         time.sleep(1)
         
 main()

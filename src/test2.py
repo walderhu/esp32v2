@@ -50,8 +50,8 @@ class Stepper:
     def _move_accel(self, distance_cm, max_freq=None, min_freq=5000, accel_ratio=0.15, accel_grain=10):
         if max_freq is None: max_freq = self.freq
         direction = distance_cm > 0; self.dir_pin.value(direction)
-        if not (0 <= (self.current_coord + distance_cm ) <= self.limit_coord_cm):
-            raise ValueError('Выход за границы портала')
+        if not (0 <= (self.current_coord + distance_cm ) <= self.limit_coord_cm): raise ValueError('Выход за границы портала')
+        if distance_cm <= 5: max_freq = min(12_000, max_freq)
         steps_total = int(abs(distance_cm) * self.steps_per_mm * 10)
         accel_steps = max(1, int(steps_total * accel_ratio))
         decel_steps = accel_steps
@@ -209,7 +209,9 @@ class Portal:
                 print("Exception caught in __exit__:")
                 sys.print_exception(exc, sys.stdout)
         finally:
-            self.enable(False); return False
+            if self.auto_disable_sec is not None: self.stop_auto_timer()
+            self.enable(False)
+            return False
             
     def __ior__(self, coords):
             """
@@ -248,21 +250,16 @@ class Portal:
             if time.ticks_diff(now, t_next) >= 0:
                 acc_x += step_ratio_x
                 acc_y += step_ratio_y
-
                 if not x_done and acc_x >= SCALE:
                     acc_x -= SCALE
                     if swx_val() == 0:
                         sx_on(); sx_off()
-                    else:
-                        x_done = True
-
+                    else: x_done = True
                 if not y_done and acc_y >= SCALE:
                     acc_y -= SCALE
                     if swy_val() == 0:
                         sy_on(); sy_off()
-                    else:
-                        y_done = True
-
+                    else: y_done = True
                 t_next = time.ticks_add(now, delay_min)
 
         time.sleep_ms(debounce_ms)

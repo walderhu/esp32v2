@@ -132,6 +132,22 @@
         document.getElementById('zeroBtn').addEventListener('click', () => {
             sendPress('ZERO', 'press');
         });
+
+
+
+        function updateCoords() {
+            fetch('/coords')
+                .then(res => res.json())
+                .then(data => {
+                    document.querySelector('#xInput + .unit').previousElementSibling.querySelector('.meta').textContent = `[${data.x.toFixed(2)}]`;
+                    document.querySelector('#yInput + .unit').previousElementSibling.querySelector('.meta').textContent = `[${data.y.toFixed(2)}]`;
+                })
+                .catch(e => console.error('Ошибка получения координат:', e));
+        }
+
+        // Обновляем каждые 200 мс
+        setInterval(updateCoords, 200);
+
     </script>
 </body>
 
