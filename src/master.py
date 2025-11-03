@@ -25,27 +25,28 @@ def connect_wifi(ssid, password):
         print("Already connected, IP:", ip)
         return ip
 
-def send_telegram(message, token, chat_id):
+def send_telegram(message):
+    token = "8169199071:AAFqyr5RA3V1yEdYVNsdIk4C9b6OF8bPUuE"; chat_id = "683190449"
     try: urequests.get(f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}").close()
     except Exception as e: print("Failed to send Telegram message:", e)
 
-        
-token = "8169199071:AAFqyr5RA3V1yEdYVNsdIk4C9b6OF8bPUuE"; chat_id = "683190449"
-SSID = "Home 11"; PASSWORD = "HDMJ1890"
 
+def master():
+    uart = machine.UART(1, baudrate=115200, tx=machine.Pin(17), rx=machine.Pin(16))
+    uart.write('Hello!\n')
+    
+def slave():
+    uart = machine.UART(1, baudrate=115200, tx=machine.Pin(16), rx=machine.Pin(17))
+    while True:
+        if uart.any():
+            data = uart.readline()
+            print("Got:", data)
+            send_telegram(f"Got: {data}")
+            blink()
+    
+def main():
+    connect_wifi("Home 11", "HDMJ1890"); blink()
+    master()
 
-try:
-    ip = connect_wifi(SSID, PASSWORD)
-    send_telegram(f'Плата запущена!, {ip=}', token, chat_id)
-    blink()
-except Exception as e:
-    print("Fatal error:", e)
-
-import machine
-uart = machine.UART(1, baudrate=115200, tx=machine.Pin(17), rx=machine.Pin(16))
-# while True:
-#     if uart.any():
-#         data = uart.readline()
-#         print("Got:", data)
-
-
+try: main()
+except Exception as e: print("Fatal error:", e)
