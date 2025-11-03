@@ -30,23 +30,32 @@ def send_telegram(message):
     try: urequests.get(f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}").close()
     except Exception as e: print("Failed to send Telegram message:", e)
 
-
 def master():
-    uart = machine.UART(1, baudrate=115200, tx=machine.Pin(17), rx=machine.Pin(16))
-    uart.write('Hello!\n')
+    uart = machine.UART(2, baudrate=115200, tx=machine.Pin(17), rx=machine.Pin(16))
+    button = machine.Pin(0, machine.Pin.IN, machine.Pin.PULL_UP)
+    print(f"Master mode started. Press button for send UART messages")
+    while True:
+        if button.value() == 0:
+            uart.write('Hello!\n'); print("Sent Hello!")
+            blink(n=1)
+            while button.value() == 0: time.sleep_ms(50)
+        time.sleep_ms(50)
     
 def slave():
-    uart = machine.UART(1, baudrate=115200, tx=machine.Pin(16), rx=machine.Pin(17))
+    uart = machine.UART(2, baudrate=115200, tx=machine.Pin(16), rx=machine.Pin(17))
+    print("Slave mode started. Waiting for UART messages...")
     while True:
         if uart.any():
             data = uart.readline()
-            print("Got:", data)
-            send_telegram(f"Got: {data}")
+            print("\nGot:", data)
+            # send_telegram(f"Got: {data}")
             blink()
+    
     
 def main():
     connect_wifi("Home 11", "HDMJ1890"); blink()
     master()
+    # slave()
 
 try: main()
 except Exception as e: print("Fatal error:", e)
