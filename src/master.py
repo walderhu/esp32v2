@@ -44,12 +44,14 @@ def master():
 def slave():
     uart = machine.UART(2, baudrate=115200, tx=machine.Pin(16), rx=machine.Pin(17))
     print("Slave mode started. Waiting for UART messages...")
+    led=machine.Pin(2, machine.Pin.OUT)
     while True:
         if uart.any():
             data = uart.readline()
             print("\nGot:", data)
             # send_telegram(f"Got: {data}")
-            blink()
+            # blink()
+            led.value(not led.value())
     
     
 def main():
