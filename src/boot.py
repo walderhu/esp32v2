@@ -85,7 +85,7 @@ def safe_mkdir(path):
 
 
 def delete_all(path="/"):
-    saved_files = ['config.json', 'boot.py', 'webrepl_cfg.py']
+    saved_files = ['config.json', 'boot.py', 'webrepl_cfg.py'] # saved_files = []
     for filename in os.listdir(path):
         filepath = path + filename
         try:
