@@ -56,19 +56,23 @@ def bundle(board, *, button = Pin(0, Pin.IN, Pin.PULL_UP), led=Pin(2, Pin.OUT)):
         time.sleep_ms(50)
         
         if button_pressed(): # Master
-            uart.write('Hello!\n'); print(f"Sent Hello from {board} board")
-            led.on() ##!
-            while button_pressed(): time.sleep_ms(50)
-            led.off() ##!
+            uart.write(b'Hello!\n')
+            print(f"Sent Hello from {board} board")
+            led.on()
+            while button_pressed(): 
+                time.sleep_ms(50)
+            led.off() 
             
         if uart.any(): # Slave
             data = uart.readline()
-            if data:
-                print("\nGot:", data.decode().strip()); blink()
+            if data: 
+                print("\nGot:", data.decode().strip())
+                blink()
     
     
 sta = network.WLAN(network.STA_IF)
 if not sta.isconnected():
     connect_wifi("TP-Link_0D14", "24827089")
-    
-    
+net = sta.ifconfig()[0]   
+_board = 1 if net == '192.168.0.123' else 2
+bundle(board=_board)
