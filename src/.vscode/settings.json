@@ -24,6 +24,7 @@
         "tools": true,
         // ".vscode": true,
         "temp": true,
+        "esp_serv.zip": true,
         // "": true,
         // "": true,
     },
