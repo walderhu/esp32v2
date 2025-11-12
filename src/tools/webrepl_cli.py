@@ -407,6 +407,7 @@ def main():
     passwd = None
     code_to_exec = None
     i = 1
+
     # Разбор аргументов -p и -e
     while i < len(sys.argv):
         if sys.argv[i] == '-p':
@@ -423,13 +424,6 @@ def main():
     if len(sys.argv) < 2 and not code_to_exec:
         help(1)
 
-    # Определяем host и port
-    host, port, _ = parse_remote(sys.argv[1] + ":")
-
-    if passwd is None:
-        import getpass
-        passwd = getpass.getpass()
-
     # Определяем тип операции
     if code_to_exec:
         op = "exec"
@@ -437,22 +431,33 @@ def main():
         op = "repl"
     elif ":" in sys.argv[1]:
         op = "get"
-        src_file = parse_remote(sys.argv[1])[2]
-        dst_file = sys.argv[2]
-        if os.path.isdir(dst_file):
-            basename = src_file.rsplit("/", 1)[-1]
-            dst_file += "/" + basename
     else:
         op = "put"
-        dst_file = parse_remote(sys.argv[2])[2]
+
+    # Определяем host, port и файлы в зависимости от операции
+    if op == "put":
         src_file = sys.argv[1]
+        dst_file = parse_remote(sys.argv[2])[2]
+        host, port, _ = parse_remote(sys.argv[2])
         if dst_file[-1] == "/":
             basename = src_file.rsplit("/", 1)[-1]
             dst_file += basename
+    elif op == "get":
+        dst_file = sys.argv[2]
+        src_file = parse_remote(sys.argv[1])[2]
+        host, port, _ = parse_remote(sys.argv[1])
+        if os.path.isdir(dst_file):
+            basename = src_file.rsplit("/", 1)[-1]
+            dst_file += "/" + basename
+    elif op in ("exec", "repl"):
+        host, port, _ = parse_remote(sys.argv[1])
 
-    # print("op:%s, host:%s, port:%d, passwd:%s." % (op, host, port, passwd)) #!
+    if passwd is None:
+        import getpass
+        passwd = getpass.getpass()
+
     if op in ("get", "put"):
-        print(src_file, "->", dst_file)
+        print(f"{src_file} -> {dst_file}")
 
     # Подключаемся к сокету
     s = socket.socket()
@@ -463,10 +468,10 @@ def main():
 
     ws = websocket(s)
     login(ws, passwd)
-    # print("Remote WebREPL version:", get_ver(ws)) #!
 
     ws.ioctl(9, 2)
 
+    # Выполняем нужную операцию
     if code_to_exec:
         exec_code(ws, code_to_exec)
     elif op == "repl":

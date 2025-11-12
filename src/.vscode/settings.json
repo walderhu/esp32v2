@@ -11,22 +11,27 @@
     "files.exclude": {
         // "**/__pycache__": true,
         // "**/*.pyc": true,
+        // "**/.*": true
+        // "**/.vscode": true,
+        // ".vscode": true,
+        "boot.py": true,
         "**/.git": true,
         "**/.gitignore": true,
-        // "**/.vscode": true,
-        // "**/.*": true
-        "boot.py": true,
         "webrepl_cfg.py": true,
         "config.json": true,
         ".hash.local": true,
         "nanoshim": true,
         ".deployignore": true,
         "tools": true,
-        // ".vscode": true,
         "temp": true,
         "esp_serv.zip": true,
-        // "": true,
-        // "": true,
+        //
+        //
+        //
+        "wire": true, //
+        "Makefile": true,
+        "modules": true,
+        "server": true,
     },
     "python.defaultInterpreterPath": "/home/des/miniforge3/envs/esp/bin/python",
     "terminal.integrated.profiles.linux": {
