@@ -1,71 +1,182 @@
 <!doctype html>
-<html>
+<html lang="ru">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Joystick Control</title>
+    <title>Управление ЧПУ</title>
     <link rel="stylesheet" href="/style.css">
+
+    <style>
+        html,
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            background: #f9f9f9;
+        }
+
+        /* ===== ВЕРХНИЙ БЛОК РЕЖИМОВ ===== */
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 20px 0 30px 0;
+            background: #fff;
+            width: 100%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .mode-btn {
+            background: #fff;
+            border: 2px solid #ccc;
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            width: 100px;
+        }
+
+        .mode-btn img {
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+        }
+
+        .mode-btn span {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .mode-btn:hover {
+            border-color: #007bff;
+            box-shadow: 0 6px 14px rgba(0, 123, 255, 0.2);
+        }
+
+        .mode-btn.selected {
+            border-color: #007bff;
+            background: #e9f2ff;
+            box-shadow: 0 6px 14px rgba(0, 123, 255, 0.3);
+        }
+
+        /* ===== ДЖОЙСТИК + КОНТРОЛЫ ===== */
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+    </style>
 </head>
 
 <body>
-    <div class="container">
-        <!-- Левая панель управления -->
-        <div class="controls">
-            <div class="columns-row">
-                <div class="column">
-                    <div class="coord-input">
-                        <label><span class="axis">X:</span> <span class="meta">[0.00]</span></label>
-                        <input type="number" id="xInput" value="52.91" step="0.01">
-                        <span class="unit">мм</span>
-                    </div>
-                    <div class="speed-input">
-                        <label><span class="axis">Скорость</span></label>
-                        <input type="number" id="speed" value="10" step="1">
-                        <span class="unit">мм/с</span>
-                    </div>
-                </div>
-                <div class="column">
-                    <div class="coord-input">
-                        <label><span class="axis">Y:</span> <span class="meta">[0.00]</span></label>
-                        <input type="number" id="yInput" value="62.03" step="0.01">
-                        <span class="unit">мм</span>
-                    </div>
-                    <div class="speed-input">
-                        <label><span class="axis">Длина шага</span></label>
-                        <input type="number" id="stepLength" value="5" step="0.1">
-                        <span class="unit">мм</span>
-                    </div>
-                </div>
-            </div>
-            <button id="zeroBtn" class="zero-btn">Применить</button>
-        </div>
+    <!-- === ВЕРХНИЙ ВЫБОР РЕЖИМА === -->
+    <div class="mode-selector">
+        <button class="mode-btn selected" data-mode="cnc">
+            <img src="misc/cnc.png" alt="Движение">
+            <span>Движение</span>
+        </button>
+        <button class="mode-btn" data-mode="arm">
+            <img src="misc/roboarm.png" alt="Рука">
+            <span>Рука</span>
+        </button>
+        <button class="mode-btn" data-mode="head">
+            <img src="misc/doze.png" alt="Голова">
+            <span>Голова</span>
+        </button>
+        <button class="mode-btn" data-mode="vortex">
+            <img src="misc/vortex.png" alt="Нагрев">
+            <span>Нагрев</span>
+        </button>
+        <button class="mode-btn" data-mode="head">
+            <img src="misc/synthesis.png" alt="Синтез">
+            <span>Синтез</span>
+        </button>
+    </div>
 
-        <!-- Правая панель — джойстик -->
-        <div class="pad">
-            <button class="dir home" data-dir="home">
-                <img src="misc/home.svg" alt="home" />
-            </button>
-            <button class="dir stop" data-dir="stop">
-                <img src="misc/stop.svg" alt="Stop" width="32" height="32" />
-            </button>
-            <button class="dir up" data-dir="up">
-                <img src="misc/up.svg" alt="up" width="32" height="32" />
-            </button>
-            <button class="dir down" data-dir="down">
-                <img src="misc/down.svg" alt="down" width="32" height="32" />
-            </button>
-            <button class="dir left" data-dir="left">
-                <img src="misc/left.svg" alt="left" width="32" height="32" />
-            </button>
-            <button class="dir right" data-dir="right">
-                <img src="misc/right.svg" alt="right" width="32" height="32" />
-            </button>
+    <!-- === НИЖНЯЯ ЧАСТЬ: ДЖОЙСТИК ЧПУ === -->
+    <div class="main-content">
+        <div class="container">
+            <!-- Левая панель управления -->
+            <div class="controls">
+                <div class="columns-row">
+                    <div class="column">
+                        <div class="coord-input">
+                            <label><span class="axis">X:</span> <span class="meta">[0.00]</span></label>
+                            <input type="number" id="xInput" value="52.91" step="0.01">
+                            <span class="unit">мм</span>
+                        </div>
+                        <div class="speed-input">
+                            <label><span class="axis">Скорость</span></label>
+                            <input type="number" id="speed" value="10" step="1">
+                            <span class="unit">мм/с</span>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="coord-input">
+                            <label><span class="axis">Y:</span> <span class="meta">[0.00]</span></label>
+                            <input type="number" id="yInput" value="62.03" step="0.01">
+                            <span class="unit">мм</span>
+                        </div>
+                        <div class="speed-input">
+                            <label><span class="axis">Длина шага</span></label>
+                            <input type="number" id="stepLength" value="5" step="0.1">
+                            <span class="unit">мм</span>
+                        </div>
+                    </div>
+                </div>
+                <button id="zeroBtn" class="zero-btn">Применить</button>
+            </div>
+
+            <!-- Правая панель — джойстик -->
+            <div class="pad">
+                <button class="dir home" data-dir="home">
+                    <img src="misc/home.svg" alt="home" />
+                </button>
+                <button class="dir stop" data-dir="stop">
+                    <img src="misc/stop.svg" alt="Stop" width="32" height="32" />
+                </button>
+                <button class="dir up" data-dir="up">
+                    <img src="misc/up.svg" alt="up" width="32" height="32" />
+                </button>
+                <button class="dir down" data-dir="down">
+                    <img src="misc/down.svg" alt="down" width="32" height="32" />
+                </button>
+                <button class="dir left" data-dir="left">
+                    <img src="misc/left.svg" alt="left" width="32" height="32" />
+                </button>
+                <button class="dir right" data-dir="right">
+                    <img src="misc/right.svg" alt="right" width="32" height="32" />
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- Общая функция отправки POST
+        // Переключение режима (пока только визуально)
+        const modeButtons = document.querySelectorAll('.mode-btn');
+        modeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                modeButtons.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                console.log('Активный режим:', btn.dataset.mode);
+            });
+        });
+
+        // === Остальной JS джойстика ===
         const sendPress = (dir, action = "press", value = null) => {
             fetch('/press', {
                 method: 'POST',
@@ -80,7 +191,6 @@
             }
         };
 
-        // --- Кнопки движения
         document.querySelectorAll('button.dir').forEach(btn => {
             const dir = btn.dataset.dir;
             let isPressed = false;
@@ -93,7 +203,6 @@
             btn.addEventListener('touchend', release);
         });
 
-        // --- Управление клавишами
         const keyMap = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', ' ': 'stop', h: 'home' };
         const keysPressed = {};
         window.addEventListener('keydown', e => {
@@ -105,7 +214,6 @@
             if (dir && keysPressed[dir]) { sendPress(dir, 'release'); keysPressed[dir] = false; }
         });
 
-        // --- Поля ввода
         ['xInput', 'yInput', 'speed', 'stepLength'].forEach(id => {
             const el = document.getElementById(id);
             el.addEventListener('change', e => {
@@ -113,12 +221,10 @@
             });
         });
 
-        // --- Кнопка Применить
         document.getElementById('zeroBtn').addEventListener('click', () => {
             sendPress('ZERO', 'press');
         });
 
-        // --- Обновление координат
         function updateCoords() {
             fetch('/coords')
                 .then(res => res.json())
