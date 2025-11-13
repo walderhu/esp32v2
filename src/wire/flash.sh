@@ -57,3 +57,57 @@ esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 460800 write_flash -z 0x1000 
 
 
 # https://chatgpt.com/c/6914e414-0efc-8331-bc66-68a1b8a54015
+
+
+
+
+
+
+
+
+
+
+#############################
+#############################
+#############################
+
+unset IDF_TOOLS_PATH
+export IDF_PATH="$HOME/Documents/dev_iot/opt/upy/tools/esp_idf_v5.4.1/esp-idf"
+cd "$IDF_PATH"
+./install.sh        # на всякий случай — чтобы убедиться, что всё скачано
+. ./export.sh       # активируем среду
+
+
+if [[ "$CONDA_DEFAULT_ENV" != "esp" ]]; then
+    conda deactivate
+    conda activate esp
+fi
+
+if [[ ! -e /dev/ttyUSB0 ]]; then
+    usbipd detach --busid 1-3
+    usbipd bind --busid 1-3
+    usbipd attach --wsl --busid 1-3
+
+    for i in {1..100}; do
+        if [[ -e /dev/ttyUSB0 ]]; then
+            break
+        fi
+        sleep 0.01
+    done
+
+    if [[ ! -e /dev/ttyUSB0 ]]; then
+        echo "❌ Ошибка: устройство /dev/ttyUSB0 так и не появилось."
+        return 1
+    fi
+fi
+cd ~/WORK/src/micropython/ports/esp32
+
+ls /dev/ttyUSB*
+
+esptool.py --chip esp32 --port /dev/ttyUSB0 erase_flash
+
+esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 460800 write_flash -z 0x1000 \
+    build_ESP32_GENERIC/bootloader/bootloader.bin \
+    0x8000 build_ESP32_GENERIC/partition_table/partition-table.bin \
+    0x10000 build_ESP32_GENERIC/micropython.bin
+

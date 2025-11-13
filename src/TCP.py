@@ -53,7 +53,6 @@ def run_master():
             if button_pressed():
                 cmd = "ON"; print("Sending:", cmd); s.send(cmd.encode())
                 response = s.recv(1024); print("Response:", response.decode())
-                
                 while button_pressed(): time.sleep_ms(50)
                 cmd = "OFF"; print("Sending:", cmd); s.send(cmd.encode())
                 response = s.recv(1024); print("Response:", response.decode())
