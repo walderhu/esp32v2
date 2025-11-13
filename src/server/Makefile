@@ -2,6 +2,7 @@
 all: clean
 	@ngrok http 8081 > ngrok.log 2>&1 &
 	@echo "▶ Запускаем сервер..."
+# 	@cmd.exe /c start https://jazlynn-englacial-undoubtfully.ngrok-free.dev/
 	@python server.py 
 
 
