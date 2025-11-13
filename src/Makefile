@@ -1,5 +1,6 @@
 usbipd = "/mnt/c/Program Files/usbipd-win/usbipd.exe"
-HOST = 192.168.0.92
+HOST = 192.168.0.123
+# HOST = 192.168.0.92
 PASS = 1234
 CLI = python tools/webrepl_client.py
 RUN := $(CLI) -p $(PASS) $(HOST) -e 
@@ -177,10 +178,10 @@ flash:
 server:
 	$(MAKE) -C server
 
-FILE = test2.py
+FILE = _tcp.py
 MODULE = $(basename $(FILE))
 gg:
 	@$(RUN) "import machine; machine.soft_reset()" > /dev/null; sleep 0.5
 	@$(MAKE) --no-print-directory put FILE="$(FILE)"
-# 	-@$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()" --verbose --exit
-	-$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()" --verbose 
+	-@$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()" --verbose --exit
+# 	-$(RUN) "import $(basename $(FILE)); $(basename $(FILE)).test()" --verbose 

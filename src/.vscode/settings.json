@@ -29,11 +29,18 @@
         //
         //
         "wire": true, //
-        "Makefile": true,
+        // "Makefile": true,
         "modules": true,
-        "server": true,
+        // "server": true,
         "micropython": true,
         "micropython-esp32-twai": true,
+        //
+        //
+        //
+        "robohand.py": true,
+        "robohand2.py": true,
+        "TCP.py": true,
+        "test2.py": true,
     },
     "python.defaultInterpreterPath": "/home/des/miniforge3/envs/esp/bin/python",
     "terminal.integrated.profiles.linux": {
