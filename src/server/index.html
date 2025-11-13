@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!doctype html>
 <html>
 
@@ -11,38 +10,8 @@
 
 <body>
     <div class="container">
-        <div class="pad">
-            <button class="dir home" data-dir="home">
-                <img src="misc/home.svg" alt="home" />
-            </button>
-            <button class="dir stop" data-dir="stop">
-                <img src="misc/stop.svg" alt="Stop" width="32" height="32" />
-            </button>
-            <button class="dir up" data-dir="up">
-                <img src="misc/up.svg" alt="up" width="32" height="32" />
-            </button>
-            <button class="dir down" data-dir="down">
-                <img src="misc/down.svg" alt="down" width="32" height="32" />
-            </button>
-            <button class="dir left" data-dir="left">
-                <img src="misc/left.svg" alt="left" width="32" height="32" />
-            </button>
-            <button class="dir right" data-dir="right">
-                <img src="misc/right.svg" alt="right" width="32" height="32" />
-            </button>
-        </div>
-
-        <!-- Controls Section -->
+        <!-- Левая панель управления -->
         <div class="controls">
-            <div class="scale-row">
-                <button class="scale-btn" data-scale="0.1">0.1</button>
-                <button class="scale-btn" data-scale="1">1</button>
-                <button class="scale-btn" data-scale="10">10</button>
-                <button class="scale-btn" data-scale="25">25</button>
-                <button class="scale-btn selected" data-scale="50">50</button>
-                <button class="scale-btn" data-scale="100">100</button>
-            </div>
-
             <div class="columns-row">
                 <div class="column">
                     <div class="coord-input">
@@ -69,13 +38,34 @@
                     </div>
                 </div>
             </div>
-
             <button id="zeroBtn" class="zero-btn">Применить</button>
+        </div>
+
+        <!-- Правая панель — джойстик -->
+        <div class="pad">
+            <button class="dir home" data-dir="home">
+                <img src="misc/home.svg" alt="home" />
+            </button>
+            <button class="dir stop" data-dir="stop">
+                <img src="misc/stop.svg" alt="Stop" width="32" height="32" />
+            </button>
+            <button class="dir up" data-dir="up">
+                <img src="misc/up.svg" alt="up" width="32" height="32" />
+            </button>
+            <button class="dir down" data-dir="down">
+                <img src="misc/down.svg" alt="down" width="32" height="32" />
+            </button>
+            <button class="dir left" data-dir="left">
+                <img src="misc/left.svg" alt="left" width="32" height="32" />
+            </button>
+            <button class="dir right" data-dir="right">
+                <img src="misc/right.svg" alt="right" width="32" height="32" />
+            </button>
         </div>
     </div>
 
     <script>
-        // Общая функция отправки POST
+        // --- Общая функция отправки POST
         const sendPress = (dir, action = "press", value = null) => {
             fetch('/press', {
                 method: 'POST',
@@ -90,14 +80,12 @@
             }
         };
 
-        // Кнопки движения
+        // --- Кнопки движения
         document.querySelectorAll('button.dir').forEach(btn => {
             const dir = btn.dataset.dir;
             let isPressed = false;
-
             const press = () => { if (!isPressed) { sendPress(dir, 'press'); isPressed = true; } };
             const release = () => { if (isPressed) { sendPress(dir, 'release'); isPressed = false; } };
-
             btn.addEventListener('mousedown', press);
             btn.addEventListener('mouseup', release);
             btn.addEventListener('mouseleave', release);
@@ -105,22 +93,19 @@
             btn.addEventListener('touchend', release);
         });
 
-        // Управление клавишами
+        // --- Управление клавишами
         const keyMap = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', ' ': 'stop', h: 'home' };
         const keysPressed = {};
-        window.addEventListener('keydown', e => { const dir = keyMap[e.key]; if (dir && !keysPressed[dir]) { sendPress(dir, 'press'); keysPressed[dir] = true; } });
-        window.addEventListener('keyup', e => { const dir = keyMap[e.key]; if (dir && keysPressed[dir]) { sendPress(dir, 'release'); keysPressed[dir] = false; } });
-
-        // Scale кнопки
-        document.querySelectorAll('.scale-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                sendPress('SCALE', 'press', parseFloat(btn.dataset.scale));
-            });
+        window.addEventListener('keydown', e => {
+            const dir = keyMap[e.key];
+            if (dir && !keysPressed[dir]) { sendPress(dir, 'press'); keysPressed[dir] = true; }
+        });
+        window.addEventListener('keyup', e => {
+            const dir = keyMap[e.key];
+            if (dir && keysPressed[dir]) { sendPress(dir, 'release'); keysPressed[dir] = false; }
         });
 
-        // Поля ввода
+        // --- Поля ввода
         ['xInput', 'yInput', 'speed', 'stepLength'].forEach(id => {
             const el = document.getElementById(id);
             el.addEventListener('change', e => {
@@ -128,13 +113,12 @@
             });
         });
 
-        // Кнопка Применить
+        // --- Кнопка Применить
         document.getElementById('zeroBtn').addEventListener('click', () => {
             sendPress('ZERO', 'press');
         });
 
-
-
+        // --- Обновление координат
         function updateCoords() {
             fetch('/coords')
                 .then(res => res.json())
@@ -144,10 +128,7 @@
                 })
                 .catch(e => console.error('Ошибка получения координат:', e));
         }
-
-        // Обновляем каждые 200 мс
         setInterval(updateCoords, 200);
-
     </script>
 </body>
 

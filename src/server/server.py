@@ -209,7 +209,7 @@ def serve():
 
 # --- Запуск ---
 if __name__ == "__main__":
-    init()
+    # init()
     print("✅ ESP инициализирована. Ожидание команд...")
 
     register_press("SPEED", lambda v: exec(f"p.x.freq = {v}; p.y.freq = {v}"))

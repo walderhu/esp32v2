@@ -1,59 +1,74 @@
-/* style.css */
+/* === БАЗА === */
 html,
 body {
     height: 100%;
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #f8f9fa;
-    color: #333;
-    font-size: 16px;
-    /* Slightly increased base font */
-}
-
-body {
     display: flex;
     align-items: center;
+    /* выравнивание по высоте */
     justify-content: center;
+    /* выравнивание по ширине */
     padding: 20px;
     box-sizing: border-box;
+    background: #f8f9fa;
+    font-family: sans-serif;
 }
 
+/* === ГЛАВНАЯ ГРУППА === */
 .container {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 20px;
-    max-width: 400px;
+    /* центрируем элементы относительно друг друга */
+    justify-content: center;
+    gap: 50px;
+    max-width: 1000px;
     width: 100%;
 }
 
+/* При мобильном экране — колонка */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+        gap: 24px;
+    }
+}
+
+/* === ДЖОЙСТИК === */
 .pad {
-    width: 260px;
-    height: 260px;
+    width: 300px;
+    height: 300px;
     background: #fff;
     border-radius: 18px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr 1fr;
-    gap: 10px;
-    padding: 18px;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 12px;
+    padding: 20px;
     position: relative;
     box-sizing: border-box;
 }
 
+/* === КНОПКИ === */
 button.dir {
-    border: 0;
+    border: none;
     border-radius: 10px;
-    padding: 14px;
-    font-size: 20px;
-    /* Increased */
+    background: #f1f1f1;
     cursor: pointer;
-    user-select: none;
     transition: background 0.1s, transform 0.1s;
+    font-size: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
+    user-select: none;
+    aspect-ratio: 1 / 1;
+    /* делает кнопку квадратной */
+}
+
+button.dir img {
+    width: 32px;
+    height: 32px;
 }
 
 button.dir:active,
@@ -62,6 +77,141 @@ button.dir.pressed {
     transform: scale(0.95);
 }
 
+/* Стоп — ярче */
+button.dir.stop {
+    background: #ffcccc;
+}
+
+button.dir.stop:active,
+button.dir.stop.pressed {
+    background: #ff6666;
+}
+
+/* Домой — отдельная кнопка */
+.home {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #e6ffe6;
+    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.home img {
+    width: 22px;
+    height: 22px;
+}
+
+.home:active,
+.home.pressed {
+    background: #bfffbf;
+}
+
+/* === ПАНЕЛЬ УПРАВЛЕНИЯ === */
+.controls {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    max-width: 420px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.columns-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    align-items: start;
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* === ПОЛЯ === */
+.coord-input,
+.speed-input {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.coord-input label,
+.speed-input label {
+    font-size: 13px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    padding-left: 10px;
+}
+
+.axis {
+    min-width: 70px;
+    flex-shrink: 0;
+}
+
+.meta {
+    font-size: 11px;
+    color: #999;
+    background: #f5f5f5;
+    padding: 3px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.coord-input input,
+.speed-input input {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px 6px;
+    font-size: 18px;
+    text-align: center;
+    background: #fafafa;
+    width: 80px;
+}
+
+.unit {
+    font-size: 13px;
+    color: #888;
+    text-align: center;
+    width: 80px;
+}
+
+/* === КНОПКА ПРИМЕНИТЬ === */
+.zero-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 24px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+    max-width: 200px;
+    margin: 0 auto;
+    transition: background 0.1s;
+}
+
+.zero-btn:active {
+    background: #218838;
+}
+
+
+/* === ВОЗВРАТ ПРАВИЛЬНОЙ РАСКЛАДКИ ДЖОЙСТИКА === */
 .up {
     grid-column: 2;
     grid-row: 1;
@@ -85,284 +235,36 @@ button.dir.pressed {
 .stop {
     grid-column: 2;
     grid-row: 2;
-    background: #ffcccc;
-    font-size: 26px;
-    /* Increased */
 }
 
-.stop:active,
-.stop.pressed {
-    background: #ff6666;
-}
 
-.home {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #e6ffe6;
-    border-radius: 8px;
-    padding: 8px;
+/* === ВЕРХНЯЯ ПАНЕЛЬ ВЫБОРА МОДУЛЯ === */
+.mode-selector {
     display: flex;
-    align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-}
-
-.home img {
-    width: 22px;
-    height: 22px;
-}
-
-.home:active,
-.home.pressed {
-    background: #bfffbf;
-}
-
-.sp {
-    /* Spacer */
-}
-
-/* Controls Styles */
-.controls {
-    background: #fff;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    width: 100%;
-    max-width: 400px;
-    display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 16px;
+    margin-bottom: 30px;
 }
 
-.scale-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.scale-btn {
-    background: #f0f0f0;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 8px 10px;
-    /* Slightly larger */
+.mode-btn {
+    background: #f1f1f1;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.1s;
-    font-size: 14px;
-    /* Increased */
-    min-width: 40px;
-    /* Adjusted to fit larger font */
+    transition: all 0.15s ease;
 }
 
-.scale-btn:hover {
-    background: #e0e0e0;
+.mode-btn:hover {
+    background: #e6e6e6;
 }
 
-.scale-btn.selected {
+.mode-btn.selected {
     background: #007bff;
     color: white;
     border-color: #007bff;
-}
-
-.columns-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    align-items: start;
-}
-
-.column {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.coord-input,
-.speed-input {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    /* Центрирование input и unit, без сдвига всей группы */
-    align-items: center;
-    width: 100%;
-}
-
-.coord-input label,
-.speed-input label {
-    font-size: 13px;
-    /* Increased */
-    color: #666;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-weight: 600;
-    /* Сдвиг только лейбла (текста) вправо, относительно центрированного input */
-    padding-left: 20px;
-}
-
-.axis {
-    min-width: 70px;
-    /* Adjusted for larger text */
-    flex-shrink: 0;
-    /* Чтобы лейбл не сжимался */
-}
-
-.meta {
-    font-size: 11px;
-    /* Increased slightly */
-    color: #999;
-    background: #f5f5f5;
-    padding: 3px 5px;
-    /* Slightly larger */
-    border-radius: 3px;
-    white-space: nowrap;
-    flex-shrink: 0;
-    /* Чтобы мета не сжималась */
-}
-
-.coord-input input,
-.speed-input input {
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 8px 6px;
-    /* Larger padding */
-    font-size: 18px;
-    /* Increased */
-    text-align: center;
-    background: #fafafa;
-    width: 70px;
-    /* Slightly wider to accommodate */
-    flex-shrink: 0;
-    /* Фиксированная ширина для выравнивания */
-    /* Input остается на месте, центрирован */
-}
-
-.unit {
-    font-size: 13px;
-    /* Increased */
-    color: #888;
-    text-align: center;
-    /* Ширина как у input, центрировано */
-    width: 70px;
-}
-
-.zero-btn {
-    background: #28a745;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 12px 24px;
-    /* Larger */
-    cursor: pointer;
-    font-size: 16px;
-    /* Increased */
-    font-weight: 600;
-    width: 100%;
-    max-width: 200px;
-    margin: 0 auto;
-    transition: background 0.1s;
-}
-
-.zero-btn:active {
-    background: #218838;
-}
-
-/* Responsive for Mobile - Prioritize 2x2 layout */
-@media (max-width: 480px) {
-
-    html,
-    body {
-        font-size: 15px;
-        /* Slightly increased for mobile too */
-    }
-
-    .container {
-        padding: 10px;
-        gap: 16px;
-    }
-
-    .pad {
-        width: 100%;
-        max-width: 280px;
-        height: auto;
-        aspect-ratio: 1;
-        padding: 12px;
-        gap: 8px;
-    }
-
-    button.dir {
-        padding: 12px;
-        font-size: 18px;
-        /* Adjusted */
-    }
-
-    .stop {
-        font-size: 22px;
-    }
-
-    .scale-row {
-        gap: 2px;
-    }
-
-    .scale-btn {
-        padding: 6px 8px;
-        font-size: 13px;
-        min-width: 35px;
-    }
-
-    .columns-row {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-    }
-
-    .column {
-        gap: 8px;
-    }
-
-    .coord-input label,
-    .speed-input label {
-        padding-left: 12px;
-        /* Меньше для мобилки */
-    }
-
-    .axis {
-        min-width: 60px;
-    }
-
-    .coord-input input,
-    .speed-input input {
-        width: 55px;
-        padding: 6px 4px;
-        font-size: 16px;
-    }
-
-    .unit {
-        width: 55px;
-    }
-
-    .zero-btn {
-        padding: 10px 20px;
-        font-size: 14px;
-        max-width: 160px;
-    }
-
-    .controls {
-        padding: 16px;
-        gap: 12px;
-    }
-
-    .coord-input label,
-    .speed-input label {
-        font-size: 12px;
-        gap: 2px;
-    }
-
-    .meta {
-        font-size: 10px;
-        padding: 2px 4px;
-    }
+    transform: scale(1.05);
 }
