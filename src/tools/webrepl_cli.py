@@ -260,9 +260,7 @@ def parse_remote(remote):
     return (host, port, fname)
 
 
-# Very simplified client handshake, works for MicroPython's
-# websocket server implementation, but probably not for other
-# servers.
+
 def client_handshake(sock):
     cl = sock.makefile("rwb", 0)
     cl.write(b"""\
@@ -284,25 +282,6 @@ Sec-WebSocket-Key: foo\r
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def exec_code(ws, code, done_marker="<<<WEBREPL_DONE>>>", idle_timeout=0.4):
     """
     Отправить код в REPL и дождаться маркера завершения или таймаута.
@@ -315,31 +294,22 @@ def exec_code(ws, code, done_marker="<<<WEBREPL_DONE>>>", idle_timeout=0.4):
         ws.write(code.encode('utf-8') + b'\r', WEBREPL_FRAME_TXT)
         print("[sent reset, not waiting for output]")
         return
-    
     import select, time, sys
-
     # Формируем payload: код + принт-маркер на новой строке
     # Используем '\r' для WebREPL (аналог Enter)
     payload = code + "\rprint(%r)\r" % done_marker
-
     # Отправляем как текстовую рамку
     ws.write(payload.encode("utf-8"), WEBREPL_FRAME_TXT)
-
     # Небольшая пауза, чтобы устройство начало отдачу (опционально)
     start = time.time()
     last_recv = start
     buf = b""
     marker_bytes = done_marker.encode("utf-8")
-
     sock = ws.s
-
     try:
         while True:
-            # ждем на сокете с таймаутом idle_timeout
             r, _, _ = select.select([sock], [], [], idle_timeout)
             if not r: break # отсутствие данных в течение timeout -> считаем конец вывода
-
-            # читаем по одному байту (read(1, text_ok=True) как в do_repl)
             try: b = ws.read(1, text_ok=True)
             except AssertionError: break # неожиданный конец вебсокета / данных
             if not b: break # ничего не пришло — выйдем
@@ -347,28 +317,19 @@ def exec_code(ws, code, done_marker="<<<WEBREPL_DONE>>>", idle_timeout=0.4):
             buf += b
             last_recv = time.time()
 
-            # если в буфере нашли маркер — выводим всё до маркера и выходим
             if marker_bytes in buf:
-                # вырезаем часть до маркера
                 idx = buf.find(marker_bytes)
                 out = buf[:idx]
-                # печатаем и возвращаем
                 try:
-                    # Печатаем как raw bytes (учитывая, что буфер может содержать ASCII/utf-8)
                     sys.stdout.buffer.write(out)
                     sys.stdout.buffer.flush()
                 except Exception:
-                    # fallback для окружений без buffer
                     sys.stdout.write(out.decode('utf-8', 'replace'))
                     sys.stdout.flush()
                 return
-
-            # небольшая защита: если цикл слишком долгий, выйдем по общему таймаут
             if time.time() - start > 30: break
+    except KeyboardInterrupt: pass 
 
-    except KeyboardInterrupt: pass # если прервали, аккуратно выйдем
-
-    # Если дошли сюда — либо таймаут, либо прерывание, печатаем что пришло
     if buf:
         try:
             sys.stdout.buffer.write(buf)
@@ -376,29 +337,6 @@ def exec_code(ws, code, done_marker="<<<WEBREPL_DONE>>>", idle_timeout=0.4):
         except Exception:
             sys.stdout.write(buf.decode('utf-8', 'replace'))
             sys.stdout.flush()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -420,11 +358,9 @@ def main():
             continue
         i += 1
 
-    # Если не указан код и нет хоста, показать help
     if len(sys.argv) < 2 and not code_to_exec:
         help(1)
 
-    # Определяем тип операции
     if code_to_exec:
         op = "exec"
     elif len(sys.argv) == 2:
@@ -434,7 +370,6 @@ def main():
     else:
         op = "put"
 
-    # Определяем host, port и файлы в зависимости от операции
     if op == "put":
         src_file = sys.argv[1]
         dst_file = parse_remote(sys.argv[2])[2]
@@ -459,7 +394,6 @@ def main():
     if op in ("get", "put"):
         print(f"{src_file} -> {dst_file}")
 
-    # Подключаемся к сокету
     s = socket.socket()
     ai = socket.getaddrinfo(host, port)
     addr = ai[0][4]
@@ -471,7 +405,6 @@ def main():
 
     ws.ioctl(9, 2)
 
-    # Выполняем нужную операцию
     if code_to_exec:
         exec_code(ws, code_to_exec)
     elif op == "repl":

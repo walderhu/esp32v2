@@ -150,7 +150,7 @@ run:
 	$(RUN) "import $$MODULE; $$MODULE.main()"
 
 repl:
-	@$(CLI) -p $(PASS) $(HOST);
+	$(CLI) -p $(PASS) $(HOST);
 
 clang:
 	/home/des/miniforge3/envs/esp/bin/black "$(FILE)"
