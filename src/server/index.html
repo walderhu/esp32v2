@@ -85,7 +85,189 @@
             display: none !important;
         }
 
-        /* === VORTEX === */
+        /* === CNC — ИДЕАЛЬНЫЙ === */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .col {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .col h3 {
+            margin: 0 0 12px 0;
+            color: #333;
+            font-size: 18px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .step-control {
+            text-align: center;
+            margin-bottom: 14px;
+            font-size: 14px;
+        }
+
+        .step-control input {
+            width: 50px;
+            padding: 4px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .control-row label {
+            min-width: 40px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .control-row button {
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+            font-weight: bold;
+            background: #e9ecef;
+            border: 1px solid #aaa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.1s, transform 0.1s;
+        }
+
+        .control-row button:active {
+            background: #cce5ff;
+            transform: scale(0.95);
+        }
+
+        .control-row input[type="number"] {
+            width: 60px;
+            text-align: center;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .control-row .slider {
+            flex: 1;
+        }
+
+        .move-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .move-btn,
+        .home-btn,
+        .toggle-btn {
+            flex: 1;
+            padding: 12px;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.1s, transform 0.1s;
+        }
+
+        .move-btn {
+            background: #007bff;
+        }
+
+        .home-btn {
+            background: #6c757d;
+        }
+
+        .toggle-btn {
+            background: #dc3545;
+        }
+
+        .toggle-btn.active {
+            background: #28a745;
+        }
+
+        .move-btn:active,
+        .home-btn:active,
+        .toggle-btn:active {
+            transform: scale(0.98);
+        }
+
+        .slider {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: #ddd;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+        }
+
+        /* === PAD (УМЕНЬШЕН НА 20%) === */
+        .pad {
+            width: 240px;
+            height: 240px;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 9.6px;
+            padding: 16px;
+            position: relative;
+            box-sizing: border-box;
+            margin: 0 auto;
+        }
+
+        button.dir {
+            border: none;
+            border-radius: 10px;
+            background: #f1f1f1;
+            cursor: pointer;
+            transition: background .1s, transform .1s;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            aspect-ratio: 1/1;
+        }
+
+        button.dir img {
+            width: 25.6px;
+            height: 25.6px;
+        }
+
+        button.dir:active,
+        button.dir.pressed {
+            background: #cce5ff;
+            transform: scale(0.95);
+        }
+
+        /* === VORTEX — УТОЧНЁННЫЙ === */
         .vortex-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -97,7 +279,6 @@
         .vortex-col {
             background: #fff;
             border: 1px solid #ddd;
-            _BORDER: 1px solid #ddd;
             border-radius: 14px;
             padding: 22px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -116,65 +297,17 @@
             font-weight: 600;
         }
 
-        .toggle-icon-btn {
-            width: 44px;
-            height: 44px;
-            padding: 0;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            background: #f8d7da;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .toggle-icon-btn.active {
-            background: #d4edda;
-        }
-
-        .toggle-icon-btn img {
-            width: 24px;
-            height: 24px;
-        }
-
-        .control-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .control-row label {
-            min-width: 80px;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .control-row input[type="number"] {
-            width: 70px;
+        /* .vortex-header .toggle-btn {
+            width: 40px;
             padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 16px;
-        }
+            font-size: 14px;
+        } */
 
-        .slider {
-            flex: 1;
-            height: 8px;
-            border-radius: 4px;
-            background: #ddd;
-            -webkit-appearance: none;
-        }
-
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #007bff;
-            cursor: pointer;
+        .vortex-header .toggle-btn {
+            flex: none !important;
+            width: 60px !important;
+            padding: 6px 8px;
+            font-size: 13px;
         }
 
         .current-temp {
@@ -199,11 +332,13 @@
             border-radius: 6px;
             background: #f8f9fa;
             cursor: pointer;
+            transition: background 0.1s, transform 0.1s;
         }
 
         .timer-row button:active {
             background: #007bff;
             color: white;
+            transform: scale(0.95);
         }
 
         .pid-btn {
@@ -216,9 +351,16 @@
             border: 1px solid #aaa;
             border-radius: 8px;
             cursor: pointer;
+            transition: background 0.1s, transform 0.1s;
         }
 
-        /* === ARM === */
+        .pid-btn:active {
+            background: #007bff;
+            color: white;
+            transform: scale(0.98);
+        }
+
+        /* === ARM — ИДЕАЛЬНЫЙ === */
         .arm-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -243,20 +385,6 @@
             font-weight: 600;
         }
 
-        .step-control {
-            text-align: center;
-            margin-bottom: 14px;
-            font-size: 14px;
-        }
-
-        .step-control input {
-            width: 50px;
-            padding: 4px;
-            text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-
         .joint-row {
             display: flex;
             align-items: center;
@@ -279,6 +407,12 @@
             border: 1px solid #aaa;
             border-radius: 6px;
             cursor: pointer;
+            transition: background 0.1s, transform 0.1s;
+        }
+
+        .joint-row button:active {
+            background: #cce5ff;
+            transform: scale(0.95);
         }
 
         .joint-row input[type="number"] {
@@ -298,6 +432,7 @@
             align-items: center;
             gap: 8px;
             margin-bottom: 12px;
+            flex-wrap: wrap;
         }
 
         .ik-row label {
@@ -314,23 +449,16 @@
             border-radius: 6px;
         }
 
-        .move-btn {
-            width: 100%;
-            padding: 12px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
+        .move-row-arm {
+            display: flex;
+            gap: 12px;
             margin: 16px 0 12px 0;
-            font-size: 16px;
         }
 
         .gripper-label {
             font-size: 13px;
             color: #555;
-            text-align: center;
+            text-align: left;
             margin: 8px 0 4px 0;
             font-weight: 600;
         }
@@ -340,28 +468,6 @@
             align-items: center;
             gap: 10px;
             margin-bottom: 4px;
-        }
-
-        .gripper-toggle {
-            width: 44px;
-            height: 44px;
-            padding: 0;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            background: #f8d7da;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .gripper-toggle.active {
-            background: #d4edda;
-        }
-
-        .gripper-toggle img {
-            width: 24px;
-            height: 24px;
         }
 
         .gripper-slider {
@@ -398,7 +504,7 @@
             text-align: center;
         }
 
-        /* === ДОЗАТОР === */
+        /* === ДОЗАТОР — НОВАЯ КНОПКА === */
         .dose-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -422,6 +528,28 @@
             font-weight: 600;
         }
 
+        .dose-delta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            justify-content: center;
+        }
+
+        .dose-delta label {
+            min-width: 50px;
+            font-weight: 600;
+        }
+
+        .dose-delta input {
+            width: 60px;
+            padding: 4px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
         .dose-main {
             display: flex;
             align-items: center;
@@ -442,9 +570,10 @@
             width: 80px;
             padding: 10px;
             border: none;
-            border-radius: 6px;
+            border-radius 6px;
             font-weight: 600;
             cursor: pointer;
+            transition: background 0.1s, transform 0.1s;
         }
 
         .dose-main .plus {
@@ -457,22 +586,14 @@
             color: #721c24;
         }
 
-        .dose-delta {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-
-        .dose-delta label {
-            min-width: 50px;
-            font-weight: 600;
+        .dose-main button:active {
+            transform: scale(0.95);
         }
 
         .dose-pair {
             display: flex;
             gap: 10px;
+            margin-bottom: 12px;
         }
 
         .dose-pair button {
@@ -484,6 +605,11 @@
             cursor: pointer;
             background: #e9ecef;
             color: #212529;
+            transition: background 0.1s, transform 0.1s;
+        }
+
+        .dose-pair button:active {
+            transform: scale(0.95);
         }
 
         .dose-pair .wash {
@@ -503,212 +629,58 @@
 
         .pump-controls {
             display: flex;
-            flex-direction: column;
             gap: 10px;
+            justify-content: center;
         }
 
         .pump-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 12px;
-            background: #e9ecef;
-            border: 1px solid #aaa;
+            flex: 1;
+            padding: 10px;
+            background: #dc3545;
+            color: white;
+            border: none;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             font-size: 15px;
+            transition: background 0.1s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
 
         .pump-toggle.active {
-            background: #d4edda;
-            border-color: #28a745;
+            background: #28a745;
+        }
+
+        .pump-toggle:active {
+            transform: scale(0.98);
         }
 
         .pump-toggle img {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
         }
 
         .reverse-btn {
-            padding: 12px;
+            flex: 1;
+            padding: 10px;
             border: none;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             background: #dc3545;
             color: white;
+            transition: background 0.1s, transform 0.1s;
         }
 
         .reverse-btn.active {
             background: #28a745;
         }
 
-        /* === CNC === */
-        .container {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            gap: 50px;
-            max-width: 1000px;
-            width: 100%;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-                gap: 24px;
-            }
-        }
-
-        .pad {
-            width: 300px;
-            height: 300px;
-            background: #fff;
-            border-radius: 18px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 12px;
-            padding: 20px;
-            position: relative;
-            box-sizing: border-box;
-        }
-
-        button.dir {
-            border: none;
-            border-radius: 10px;
-            background: #f1f1f1;
-            cursor: pointer;
-            transition: background .1s, transform .1s;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            aspect-ratio: 1/1;
-        }
-
-        button.dir img {
-            width: 32px;
-            height: 32px;
-        }
-
-        button.dir:active,
-        button.dir.pressed {
-            background: #cce5ff;
-            transform: scale(0.95);
-        }
-
-        .home {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #e6ffe6;
-            border-radius: 8px;
-            width: 44px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .controls {
-            background: #fff;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            max-width: 420px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
-
-        .columns-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-        }
-
-        .column {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .coord-input,
-        .speed-input {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .coord-input label,
-        .speed-input label {
-            font-size: 13px;
-            color: #666;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-weight: 600;
-            padding-left: 10px;
-        }
-
-        .axis {
-            min-width: 70px;
-            flex-shrink: 0;
-        }
-
-        .meta {
-            font-size: 11px;
-            color: #999;
-            background: #f5f5f5;
-            padding: 3px 5px;
-            border-radius: 3px;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        .coord-input input,
-        .speed-input input {
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            padding: 8px 6px;
-            font-size: 18px;
-            text-align: center;
-            background: #fefefe;
-            width: 80px;
-        }
-
-        .unit {
-            font-size: 13px;
-            color: #888;
-            text-align: center;
-            width: 80px;
-        }
-
-        .zero-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 12px 24px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            width: 100%;
-            max-width: 200px;
-            margin: 0 auto;
-            transition: background .1s;
-        }
-
-        .zero-btn:active {
-            background: #218838;
+        .reverse-btn:active {
+            transform: scale(0.98);
         }
     </style>
 </head>
@@ -738,48 +710,48 @@
 
         <!-- === CNC === -->
         <div id="cnc-ui">
-            <div class="container">
-                <div class="controls">
-                    <div class="columns-row">
-                        <div class="column">
-                            <div class="coord-input">
-                                <label><span class="axis">X:</span> <span class="meta">[0.00]</span></label>
-                                <input type="number" id="xInput" value="52.91" step="0.01">
-                                <span class="unit">мм</span>
-                            </div>
-                            <div class="speed-input">
-                                <label><span class="axis">Скорость</span></label>
-                                <input type="number" id="speed" value="10" step="1">
-                                <span class="unit">мм/с</span>
-                            </div>
-                        </div>
-                        <div class="column">
-                            <div class="coord-input">
-                                <label><span class="axis">Y:</span> <span class="meta">[0.00]</span></label>
-                                <input type="number" id="yInput" value="62.03" step="0.01">
-                                <span class="unit">мм</span>
-                            </div>
-                            <div class="speed-input">
-                                <label><span class="axis">Длина шага</span></label>
-                                <input type="number" id="stepLength" value="5" step="0.1">
-                                <span class="unit">мм</span>
-                            </div>
-                        </div>
+            <div class="grid-container">
+                <div class="col">
+                    <h3>Координаты</h3>
+                    <div class="step-control">
+                        Шаг Δ: <input type="number" id="cncStep" value="5" step="0.1" min="0.1">
                     </div>
-                    <button id="zeroBtn" class="zero-btn">Применить</button>
+
+                    <div class="control-row">
+                        <label>X</label>
+                        <button onclick="adjustCNC('x', -cncStep)">-</button>
+                        <input type="number" id="xInput" value="0" step="0.01">
+                        <button onclick="adjustCNC('x', cncStep)">+</button>
+                        <input type="range" class="slider" id="xSlider" min="0" max="500" step="0.01" value="0">
+                    </div>
+                    <div class="control-row">
+                        <label>Y</label>
+                        <button onclick="adjustCNC('y', -cncStep)">-</button>
+                        <input type="number" id="yInput" value="0" step="0.01">
+                        <button onclick="adjustCNC('y', cncStep)">+</button>
+                        <input type="range" class="slider" id="ySlider" min="0" max="500" step="0.01" value="0">
+                    </div>
+
+                    <div class="move-row">
+                        <button class="move-btn" id="cncMoveBtn">MOVE</button>
+                        <button class="home-btn" id="cncHomeBtn">HOME</button>
+                        <button class="toggle-btn" id="cncPowerBtn">OFF</button>
+                    </div>
                 </div>
-                <div class="pad">
-                    <button class="dir home" data-dir="home"><img src="misc/home.svg" alt="home"></button>
-                    <button class="dir stop" data-dir="stop"><img src="misc/stop.svg" alt="Stop" width="32"
-                            height="32"></button>
-                    <button class="dir up" data-dir="up"><img src="misc/up.svg" alt="up" width="32"
-                            height="32"></button>
-                    <button class="dir down" data-dir="down"><img src="misc/down.svg" alt="down" width="32"
-                            height="32"></button>
-                    <button class="dir left" data-dir="left"><img src="misc/left.svg" alt="left" width="32"
-                            height="32"></button>
-                    <button class="dir right" data-dir="right"><img src="misc/right.svg" alt="right" width="32"
-                            height="32"></button>
+
+                <div class="col">
+                    <h3>Управление</h3>
+                    <div class="pad">
+                        <div></div>
+                        <button class="dir up" data-dir="up"><img src="misc/up.svg" alt="up"></button>
+                        <div></div>
+                        <button class="dir left" data-dir="left"><img src="misc/left.svg" alt="left"></button>
+                        <div></div>
+                        <button class="dir right" data-dir="right"><img src="misc/right.svg" alt="right"></button>
+                        <div></div>
+                        <button class="dir down" data-dir="down"><img src="misc/down.svg" alt="down"></button>
+                        <div></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -790,9 +762,7 @@
                 <div class="vortex-col">
                     <div class="vortex-header">
                         <h3>Нагрев</h3>
-                        <button id="heaterToggle" class="toggle-icon-btn">
-                            <img src="misc/stop.svg" alt="Выкл">
-                        </button>
+                        <button class="toggle-btn" id="heaterPowerBtn">OFF</button>
                     </div>
                     <div class="control-group">
                         <label>Текущая: <span id="currentTemp" class="current-temp">--.-</span> °C</label>
@@ -808,9 +778,7 @@
                 <div class="vortex-col">
                     <div class="vortex-header">
                         <h3>Мешалка</h3>
-                        <button id="mixToggle" class="toggle-icon-btn">
-                            <img src="misc/stop.svg" alt="Выкл">
-                        </button>
+                        <button class="toggle-btn" id="mixPowerBtn">OFF</button>
                     </div>
                     <div class="control-row">
                         <label>Скорость:</label>
@@ -841,21 +809,21 @@
 
                     <div class="joint-row">
                         <label>θ1</label>
-                        <button onclick="adjustJoint('j1', -delta)">−</button>
+                        <button onclick="adjustJoint('j1', -delta)">-</button>
                         <input type="number" id="j1Value" value="0" step="1">
                         <button onclick="adjustJoint('j1', delta)">+</button>
                         <input type="range" class="slider" id="j1Slider" min="-180" max="180" value="0">
                     </div>
                     <div class="joint-row">
                         <label>θ2</label>
-                        <button onclick="adjustJoint('j2', -delta)">−</button>
+                        <button onclick="adjustJoint('j2', -delta)">-</button>
                         <input type="number" id="j2Value" value="0" step="1">
                         <button onclick="adjustJoint('j2', delta)">+</button>
                         <input type="range" class="slider" id="j2Slider" min="-180" max="180" value="0">
                     </div>
                     <div class="joint-row">
                         <label>φ</label>
-                        <button onclick="adjustJoint('j3', -delta)">−</button>
+                        <button onclick="adjustJoint('j3', -delta)">-</button>
                         <input type="number" id="j3Value" value="0" step="1">
                         <button onclick="adjustJoint('j3', delta)">+</button>
                         <input type="range" class="slider" id="j3Slider" min="-90" max="90" value="0">
@@ -874,13 +842,15 @@
                         <label>Y</label> <input type="number" id="yTarget" value="0" step="1">
                         <label>Z</label> <input type="number" id="zTarget" value="150" step="1">
                     </div>
-                    <button class="move-btn" id="moveBtn">MOVE</button>
 
-                    <div class="gripper-label">Хваталка</div>
+                    <div class="move-row-arm">
+                        <button class="move-btn" id="moveBtn">MOVE</button>
+                        <button class="home-btn" id="armHomeBtn">HOME</button>
+                        <button class="toggle-btn" id="armPowerBtn">OFF</button>
+                    </div>
+
+                    <div class="gripper-label">Gripper Force</div>
                     <div class="gripper-row">
-                        <button id="gripperToggle" class="gripper-toggle">
-                            <img src="misc/stop.svg" alt="Выкл">
-                        </button>
                         <input type="range" class="gripper-slider" id="gripperSlider" min="0" max="100" value="50">
                         <span id="gripperValue" class="gripper-value">50%</span>
                     </div>
@@ -906,7 +876,7 @@
                     <h3>Дозатор</h3>
                     <div class="dose-delta">
                         <label>Δ мл:</label>
-                        <input type="number" id="doseDelta" value="10" step="1" min="1" style="width:60px;">
+                        <input type="number" id="doseDelta" value="10" step="1" min="1">
                     </div>
                     <div class="dose-main">
                         <button class="minus" id="doseMinus">DOSE –</button>
@@ -924,7 +894,7 @@
                     <h3>Перистальтика</h3>
                     <div class="pump-controls">
                         <button class="pump-toggle" id="pumpToggle">
-                            <img src="misc/stop.svg" alt="PUMP"> PUMP OFF
+                            <img src="misc/stop.svg" alt="PUMP"> OFF
                         </button>
                         <button class="reverse-btn" id="pumpReverse">
                             РЕВЕРС
@@ -946,7 +916,7 @@
 
     <script>
         const L1 = 150, L2 = 120;
-        let delta = 5;
+        let cncStep = 5, delta = 5;
 
         // === ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ ===
         const modeButtons = document.querySelectorAll('.mode-btn');
@@ -957,6 +927,7 @@
             vortex: document.getElementById('vortex-ui'),
             synth: document.getElementById('synth-ui')
         };
+
         modeButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 modeButtons.forEach(b => b.classList.remove('selected'));
@@ -967,63 +938,85 @@
         });
 
         // === CNC ===
-        const sendPress = (dir, action = "press", value = null) => {
-            fetch('/press', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dir, action, value }) }).catch(() => { });
-            const btn = document.querySelector(`button.dir[data-dir="${dir}"]`);
-            if (btn) btn.classList.toggle('pressed', action === 'press');
+        const xInput = document.getElementById('xInput');
+        const xSlider = document.getElementById('xSlider');
+        const yInput = document.getElementById('yInput');
+        const ySlider = document.getElementById('ySlider');
+        const cncStepInput = document.getElementById('cncStep');
+        const cncMoveBtn = document.getElementById('cncMoveBtn');
+        const cncHomeBtn = document.getElementById('cncHomeBtn');
+        const cncPowerBtn = document.getElementById('cncPowerBtn');
+        let cncPower = false;
+
+        cncStepInput.addEventListener('change', () => {
+            cncStep = Math.max(0.1, parseFloat(cncStepInput.value) || 5);
+            cncStepInput.value = cncStep;
+        });
+
+        function syncSlider(input, slider) {
+            slider.addEventListener('input', () => input.value = parseFloat(slider.value).toFixed(2));
+            input.addEventListener('change', () => {
+                let v = parseFloat(input.value);
+                v = Math.max(0, Math.min(500, v));
+                input.value = v.toFixed(2);
+                slider.value = v;
+            });
+        }
+        syncSlider(xInput, xSlider);
+        syncSlider(yInput, ySlider);
+
+        window.adjustCNC = function (axis, delta) {
+            const input = axis === 'x' ? xInput : yInput;
+            const slider = axis === 'x' ? xSlider : ySlider;
+            let v = parseFloat(input.value) + delta;
+            v = Math.max(0, Math.min(500, v));
+            input.value = v.toFixed(2);
+            slider.value = v;
         };
-        document.querySelectorAll('button.dir').forEach(btn => {
+
+        cncMoveBtn.addEventListener('click', () => {
+            if (cncPower) sendCNC('move', { x: parseFloat(xInput.value), y: parseFloat(yInput.value) });
+        });
+
+        cncHomeBtn.addEventListener('click', () => {
+            xInput.value = '0.00'; xSlider.value = 0;
+            yInput.value = '0.00'; ySlider.value = 0;
+            sendCNC('home');
+        });
+
+        cncPowerBtn.addEventListener('click', () => {
+            cncPower = !cncPower;
+            cncPowerBtn.classList.toggle('active', cncPower);
+            cncPowerBtn.textContent = cncPower ? 'ON' : 'OFF';
+            sendCNC(cncPower ? 'power_on' : 'power_off');
+        });
+
+        function sendCNC(action, data = null) {
+            fetch('/cnc', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, ...data })
+            }).catch(() => { });
+        }
+
+        // === ДЖОЙСТИК: движение на шаг при нажатии ===
+        document.querySelectorAll('#cnc-ui button.dir').forEach(btn => {
             const dir = btn.dataset.dir;
-            let pressed = false;
-            const press = () => { if (!pressed) { sendPress(dir, 'press'); pressed = true; } };
-            const release = () => { if (pressed) { sendPress(dir, 'release'); pressed = false; } };
-            btn.addEventListener('mousedown', press);
-            btn.addEventListener('mouseup', release);
-            btn.addEventListener('mouseleave', release);
-            btn.addEventListener('touchstart', e => { e.preventDefault(); press(); }, { passive: false });
-            btn.addEventListener('touchend', release);
+            const axis = (dir === 'left' || dir === 'right') ? 'x' : 'y';
+            const sign = (dir === 'right' || dir === 'up') ? 1 : -1;
+
+            btn.addEventListener('click', () => {
+                if (!cncPower) return;
+
+                const input = axis === 'x' ? xInput : yInput;
+                const slider = axis === 'x' ? xSlider : ySlider;
+                let value = parseFloat(input.value);
+                value = Math.max(0, Math.min(500, value + sign * cncStep));
+
+                input.value = value.toFixed(2);
+                slider.value = value;
+            });
         });
-        const keyMap = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', ' ': 'stop', 'h': 'home' };
-        const keys = {};
-        window.addEventListener('keydown', e => { const d = keyMap[e.key]; if (d && !keys[d]) { sendPress(d, 'press'); keys[d] = true; } });
-        window.addEventListener('keyup', e => { const d = keyMap[e.key]; if (d && keys[d]) { sendPress(d, 'release'); keys[d] = false; } });
-        ['xInput', 'yInput', 'speed', 'stepLength'].forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('change', e => sendPress(id.toUpperCase(), 'press', parseFloat(e.target.value))); });
-        document.getElementById('zeroBtn')?.addEventListener('click', () => sendPress('ZERO', 'press'));
-        function updateCoords() { fetch('/coords').then(r => r.json()).then(d => { const xMeta = document.querySelector('#xInput')?.closest('.coord-input')?.querySelector('.meta'); const yMeta = document.querySelector('#yInput')?.closest('.coord-input')?.querySelector('.meta'); if (xMeta) xMeta.textContent = `[${d.x?.toFixed(2)}]`; if (yMeta) yMeta.textContent = `[${d.y?.toFixed(2)}]`; }).catch(() => { }); }
-        setInterval(updateCoords, 200);
-
-        // === VORTEX ===
-        const tempSlider = document.getElementById('tempSlider'), tempInput = document.getElementById('tempInput');
-        const mixSlider = document.getElementById('mixSlider'), mixInput = document.getElementById('mixInput');
-        const timerInput = document.getElementById('timerInput');
-        const heaterToggle = document.getElementById('heaterToggle'), mixToggle = document.getElementById('mixToggle');
-        const currentTempEl = document.getElementById('currentTemp'), pidToggle = document.getElementById('pidToggle');
-        let heaterOn = false, mixOn = false, pidAuto = true;
-
-        tempSlider.addEventListener('input', () => { tempInput.value = tempSlider.value; if (heaterOn) sendVortex('heater_set', tempSlider.value); });
-        tempInput.addEventListener('change', () => { let v = Math.max(0, Math.min(300, parseFloat(tempInput.value) || 0)); tempInput.value = v; tempSlider.value = v; if (heaterOn) sendVortex('heater_set', v); });
-        mixSlider.addEventListener('input', () => { mixInput.value = mixSlider.value; if (mixOn) sendVortex('mix_speed', mixSlider.value); });
-        mixInput.addEventListener('change', () => { let v = Math.max(0, Math.min(100, parseInt(mixInput.value) || 0)); mixInput.value = v; mixSlider.value = v; if (mixOn) sendVortex('mix_speed', v); });
-        document.querySelectorAll('[data-timer]').forEach(b => b.addEventListener('click', () => { timerInput.value = b.dataset.timer; sendVortex('timer', b.dataset.timer); }));
-        timerInput.addEventListener('change', () => { if (timerInput.value > 0) sendVortex('timer', timerInput.value); });
-
-        heaterToggle.addEventListener('click', () => {
-            heaterOn = !heaterOn;
-            heaterToggle.classList.toggle('active', heaterOn);
-            heaterToggle.querySelector('img').src = heaterOn ? 'misc/vortex.png' : 'misc/stop.svg';
-            sendVortex(heaterOn ? 'heater_on' : 'heater_off', heaterOn ? tempInput.value : null);
-        });
-        mixToggle.addEventListener('click', () => {
-            mixOn = !mixOn;
-            mixToggle.classList.toggle('active', mixOn);
-            mixToggle.querySelector('img').src = mixOn ? 'misc/vortex.png' : 'misc/stop.svg';
-            sendVortex(mixOn ? 'mix_on' : 'mix_off', mixOn ? mixInput.value : null);
-        });
-        pidToggle.addEventListener('click', () => { pidAuto = !pidAuto; pidToggle.textContent = `PID: ${pidAuto ? 'AUTO' : 'MANUAL'}`; sendVortex('pid_toggle', pidAuto ? 'auto' : 'manual'); });
-        function sendVortex(a, v = null) { fetch('/vortex', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: a, value: v }) }).catch(() => { }); }
-        function updateTemp() { fetch('/temp').then(r => r.json()).then(d => { if (d.temp !== undefined) currentTempEl.textContent = d.temp.toFixed(1); }).catch(() => { }); }
-        setInterval(updateTemp, 1000); updateTemp();
-
         // === ARM ===
         const j1Slider = document.getElementById('j1Slider'), j1Value = document.getElementById('j1Value');
         const j2Slider = document.getElementById('j2Slider'), j2Value = document.getElementById('j2Value');
@@ -1031,9 +1024,12 @@
         const zSlider = document.getElementById('zSlider'), zValue = document.getElementById('zValue');
         const xTarget = document.getElementById('xTarget'), yTarget = document.getElementById('yTarget'), zTarget = document.getElementById('zTarget');
         const moveBtn = document.getElementById('moveBtn');
-        const gripperToggle = document.getElementById('gripperToggle'), gripperSlider = document.getElementById('gripperSlider'), gripperValue = document.getElementById('gripperValue');
+        const armHomeBtn = document.getElementById('armHomeBtn');
+        const armPowerBtn = document.getElementById('armPowerBtn');
+        const gripperSlider = document.getElementById('gripperSlider'), gripperValue = document.getElementById('gripperValue');
         const deltaInput = document.getElementById('deltaInput');
         const armSpeed = document.getElementById('armSpeed'), armAccel = document.getElementById('armAccel');
+        let armPower = false;
 
         deltaInput.addEventListener('change', () => delta = Math.max(1, parseInt(deltaInput.value) || 5));
 
@@ -1105,19 +1101,33 @@
             gripperValue.textContent = gripperSlider.value + '%';
             const phi = Math.round(gripperSlider.value * 1.8 - 90);
             j3Value.value = phi; j3Slider.value = phi;
-            if (gripperToggle.classList.contains('active')) {
+            if (armPower) {
                 sendArm({ type: 'gripper', force: gripperSlider.value });
             }
         });
 
         moveBtn.addEventListener('click', () => {
-            sendArm({ type: 'move', x: parseFloat(xTarget.value), y: parseFloat(yTarget.value), z: parseFloat(zTarget.value), speed: parseFloat(armSpeed.value), accel: parseFloat(armAccel.value) });
+            if (armPower) {
+                sendArm({ type: 'move', x: parseFloat(xTarget.value), y: parseFloat(yTarget.value), z: parseFloat(zTarget.value), speed: parseFloat(armSpeed.value), accel: parseFloat(armAccel.value) });
+            }
         });
 
-        gripperToggle.addEventListener('click', () => {
-            const on = gripperToggle.classList.toggle('active');
-            gripperToggle.querySelector('img').src = on ? 'misc/vortex.png' : 'misc/stop.svg';
-            sendArm({ type: 'gripper', state: on ? 'on' : 'off', force: gripperSlider.value });
+        armHomeBtn.addEventListener('click', () => {
+            j1Value.value = 0; j1Slider.value = 0;
+            j2Value.value = 0; j2Slider.value = 0;
+            j3Value.value = 0; j3Slider.value = 0;
+            zValue.value = 150; zSlider.value = 150;
+            xTarget.value = 270; yTarget.value = 0; zTarget.value = 150;
+            gripperSlider.value = 50; gripperValue.textContent = '50%';
+            forwardKinematics();
+            sendArm({ type: 'home' });
+        });
+
+        armPowerBtn.addEventListener('click', () => {
+            armPower = !armPower;
+            armPowerBtn.classList.toggle('active', armPower);
+            armPowerBtn.textContent = armPower ? 'ON' : 'OFF';
+            sendArm({ type: 'power', state: armPower ? 'on' : 'off' });
         });
 
         window.adjustJoint = function (joint, d) {
@@ -1136,7 +1146,48 @@
             forwardKinematics();
         };
 
-        function sendArm(data) { fetch('/arm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).catch(() => { }); }
+        function sendArm(data) {
+            fetch('/arm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).catch(() => { });
+        }
+
+        // === VORTEX ===
+        const tempSlider = document.getElementById('tempSlider'), tempInput = document.getElementById('tempInput');
+        const mixSlider = document.getElementById('mixSlider'), mixInput = document.getElementById('mixInput');
+        const timerInput = document.getElementById('timerInput');
+        const currentTempEl = document.getElementById('currentTemp'), pidToggle = document.getElementById('pidToggle');
+        const heaterPowerBtn = document.getElementById('heaterPowerBtn');
+        const mixPowerBtn = document.getElementById('mixPowerBtn');
+        let heaterOn = false, mixOn = false, pidAuto = true;
+
+        tempSlider.addEventListener('input', () => { tempInput.value = tempSlider.value; if (heaterOn) sendVortex('heater_set', tempSlider.value); });
+        tempInput.addEventListener('change', () => { let v = Math.max(0, Math.min(300, parseFloat(tempInput.value) || 0)); tempInput.value = v; tempSlider.value = v; if (heaterOn) sendVortex('heater_set', v); });
+        mixSlider.addEventListener('input', () => { mixInput.value = mixSlider.value; if (mixOn) sendVortex('mix_speed', mixSlider.value); });
+        mixInput.addEventListener('change', () => { let v = Math.max(0, Math.min(100, parseInt(mixInput.value) || 0)); mixInput.value = v; mixSlider.value = v; if (mixOn) sendVortex('mix_speed', v); });
+        document.querySelectorAll('[data-timer]').forEach(b => b.addEventListener('click', () => { timerInput.value = b.dataset.timer; sendVortex('timer', b.dataset.timer); }));
+        timerInput.addEventListener('change', () => { if (timerInput.value > 0) sendVortex('timer', timerInput.value); });
+
+        heaterPowerBtn.addEventListener('click', () => {
+            heaterOn = !heaterOn;
+            heaterPowerBtn.classList.toggle('active', heaterOn);
+            heaterPowerBtn.textContent = heaterOn ? 'ON' : 'OFF';
+            sendVortex(heaterOn ? 'heater_on' : 'heater_off', heaterOn ? tempInput.value : null);
+        });
+
+        mixPowerBtn.addEventListener('click', () => {
+            mixOn = !mixOn;
+            mixPowerBtn.classList.toggle('active', mixOn);
+            mixPowerBtn.textContent = mixOn ? 'ON' : 'OFF';
+            sendVortex(mixOn ? 'mix_on' : 'mix_off', mixOn ? mixInput.value : null);
+        });
+
+        pidToggle.addEventListener('click', () => { pidAuto = !pidAuto; pidToggle.textContent = `PID: ${pidAuto ? 'AUTO' : 'MANUAL'}`; sendVortex('pid_toggle', pidAuto ? 'auto' : 'manual'); });
+        function sendVortex(a, v = null) { fetch('/vortex', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: a, value: v }) }).catch(() => { }); }
+        function updateTemp() { fetch('/temp').then(r => r.json()).then(d => { if (d.temp !== undefined) currentTempEl.textContent = d.temp.toFixed(1); }).catch(() => { }); }
+        setInterval(updateTemp, 1000); updateTemp();
 
         // === ДОЗАТОР ===
         const dosePlus = document.getElementById('dosePlus');
@@ -1173,8 +1224,8 @@
             pumpOn = !pumpOn;
             pumpToggle.classList.toggle('active', pumpOn);
             pumpToggle.innerHTML = pumpOn
-                ? `<img src="misc/vortex.png" alt="ON"> PUMP ON`
-                : `<img src="misc/stop.svg" alt="OFF"> PUMP OFF`;
+                ? `<img src="misc/vortex.png" alt="ON"> ON`
+                : `<img src="misc/stop.svg" alt="OFF"> OFF`;
             sendDose('pump', pumpOn ? 'on' : 'off');
         });
 
