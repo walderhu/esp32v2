@@ -6,683 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Управление ЧПУ</title>
     <link rel="stylesheet" href="/style.css">
-    <style>
-        html,
-        body {
-            height: 100%;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            padding: 20px;
-            box-sizing: border-box;
-            background: #f8f9fa;
-            font-family: sans-serif;
-        }
-
-        /* === ВЕРХНЯЯ ПАНЕЛЬ РЕЖИМОВ === */
-        .mode-selector {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            padding: 20px 60px 30px 60px;
-            background: #fff;
-            width: 100%;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            flex-wrap: wrap;
-        }
-
-        .mode-btn {
-            background: #fff;
-            border: 2px solid #ccc;
-            border-radius: 12px;
-            padding: 16px;
-            cursor: pointer;
-            transition: all 0.15s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-            width: 100px;
-        }
-
-        .mode-btn img {
-            width: 64px;
-            height: 64px;
-            object-fit: contain;
-        }
-
-        .mode-btn span {
-            font-size: 15px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .mode-btn:hover {
-            border-color: #007bff;
-            box-shadow: 0 6px 14px rgba(0, 123, 255, 0.2);
-        }
-
-        .mode-btn.selected {
-            border-color: #007bff;
-            background: #e9f2ff;
-            box-shadow: 0 6px 14px rgba(0, 123, 255, 0.3);
-        }
-
-        .main-content {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* === CNC — ИДЕАЛЬНЫЙ === */
-        .grid-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 28px;
-            max-width: 1000px;
-            width: 100%;
-        }
-
-        .col {
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 14px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .col h3 {
-            margin: 0 0 12px 0;
-            color: #333;
-            font-size: 18px;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .step-control {
-            text-align: center;
-            margin-bottom: 14px;
-            font-size: 14px;
-        }
-
-        .step-control input {
-            width: 50px;
-            padding: 4px;
-            text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-
-        .control-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        .control-row label {
-            min-width: 40px;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .control-row button {
-            width: 32px;
-            height: 32px;
-            font-size: 16px;
-            font-weight: bold;
-            background: #e9ecef;
-            border: 1px solid #aaa;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.1s, transform 0.1s;
-        }
-
-        .control-row button:active {
-            background: #cce5ff;
-            transform: scale(0.95);
-        }
-
-        .control-row input[type="number"] {
-            width: 60px;
-            text-align: center;
-            padding: 6px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-
-        .control-row .slider {
-            flex: 1;
-        }
-
-        .move-row {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-        }
-
-        .move-btn,
-        .home-btn,
-        .toggle-btn {
-            flex: 1;
-            padding: 12px;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background 0.1s, transform 0.1s;
-        }
-
-        .move-btn {
-            background: #007bff;
-        }
-
-        .home-btn {
-            background: #6c757d;
-        }
-
-        .toggle-btn {
-            background: #dc3545;
-        }
-
-        .toggle-btn.active {
-            background: #28a745;
-        }
-
-        .move-btn:active,
-        .home-btn:active,
-        .toggle-btn:active {
-            transform: scale(0.98);
-        }
-
-        .slider {
-            flex: 1;
-            height: 8px;
-            border-radius: 4px;
-            background: #ddd;
-            -webkit-appearance: none;
-        }
-
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #007bff;
-            cursor: pointer;
-        }
-
-        /* === PAD (УМЕНЬШЕН НА 20%) === */
-        .pad {
-            width: 240px;
-            height: 240px;
-            background: #fff;
-            border-radius: 18px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 9.6px;
-            padding: 16px;
-            position: relative;
-            box-sizing: border-box;
-            margin: 0 auto;
-        }
-
-        button.dir {
-            border: none;
-            border-radius: 10px;
-            background: #f1f1f1;
-            cursor: pointer;
-            transition: background .1s, transform .1s;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            aspect-ratio: 1/1;
-        }
-
-        button.dir img {
-            width: 25.6px;
-            height: 25.6px;
-        }
-
-        button.dir:active,
-        button.dir.pressed {
-            background: #cce5ff;
-            transform: scale(0.95);
-        }
-
-        /* === VORTEX — УТОЧНЁННЫЙ === */
-        .vortex-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 32px;
-            max-width: 1000px;
-            width: 100%;
-        }
-
-        .vortex-col {
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 14px;
-            padding: 22px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .vortex-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .vortex-header h3 {
-            margin: 0;
-            font-size: 19px;
-            font-weight: 600;
-        }
-
-        /* .vortex-header .toggle-btn {
-            width: 40px;
-            padding: 8px;
-            font-size: 14px;
-        } */
-
-        .vortex-header .toggle-btn {
-            flex: none !important;
-            width: 60px !important;
-            padding: 6px 8px;
-            font-size: 13px;
-        }
-
-        .current-temp {
-            font-size: 36px;
-            color: #d63384;
-            font-weight: bold;
-            margin: 4px 0;
-        }
-
-        .timer-row {
-            flex: 1;
-            display: flex;
-            gap: 6px;
-            margin-left: 10px;
-        }
-
-        .timer-row button {
-            flex: 1;
-            padding: 6px 4px;
-            font-size: 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            background: #f8f9fa;
-            cursor: pointer;
-            transition: background 0.1s, transform 0.1s;
-        }
-
-        .timer-row button:active {
-            background: #007bff;
-            color: white;
-            transform: scale(0.95);
-        }
-
-        .pid-btn {
-            width: 100%;
-            padding: 8px;
-            margin-top: 10px;
-            font-size: 13px;
-            font-weight: 600;
-            background: #e9ecef;
-            border: 1px solid #aaa;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.1s, transform 0.1s;
-        }
-
-        .pid-btn:active {
-            background: #007bff;
-            color: white;
-            transform: scale(0.98);
-        }
-
-        /* === ARM — ИДЕАЛЬНЫЙ === */
-        .arm-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 28px;
-            max-width: 1000px;
-            width: 100%;
-        }
-
-        .arm-col {
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 14px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .arm-col h3 {
-            margin: 0 0 12px 0;
-            color: #333;
-            font-size: 18px;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .joint-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        .joint-row label {
-            min-width: 40px;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .joint-row button {
-            width: 32px;
-            height: 32px;
-            font-size: 16px;
-            font-weight: bold;
-            background: #e9ecef;
-            border: 1px solid #aaa;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.1s, transform 0.1s;
-        }
-
-        .joint-row button:active {
-            background: #cce5ff;
-            transform: scale(0.95);
-        }
-
-        .joint-row input[type="number"] {
-            width: 60px;
-            text-align: center;
-            padding: 6px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-
-        .joint-row .slider {
-            flex: 1;
-        }
-
-        .ik-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-        }
-
-        .ik-row label {
-            min-width: 30px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .ik-row input {
-            width: 70px;
-            padding: 6px;
-            text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-
-        .move-row-arm {
-            display: flex;
-            gap: 12px;
-            margin: 16px 0 12px 0;
-        }
-
-        .gripper-label {
-            font-size: 13px;
-            color: #555;
-            text-align: left;
-            margin: 8px 0 4px 0;
-            font-weight: 600;
-        }
-
-        .gripper-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 4px;
-        }
-
-        .gripper-slider {
-            flex: 1;
-        }
-
-        .gripper-value {
-            min-width: 40px;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .bottom-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .bottom-row div {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .bottom-row label {
-            font-size: 13px;
-            margin-bottom: 4px;
-            color: #555;
-        }
-
-        .bottom-row input {
-            padding: 6px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            text-align: center;
-        }
-
-        /* === ДОЗАТОР — НОВАЯ КНОПКА === */
-        .dose-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 28px;
-            max-width: 1100px;
-            width: 100%;
-        }
-
-        .dose-col {
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 14px;
-            padding: 22px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .dose-col h3 {
-            margin: 0 0 16px 0;
-            font-size: 18px;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .dose-delta {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 10px;
-            font-size: 14px;
-            justify-content: center;
-        }
-
-        .dose-delta label {
-            min-width: 50px;
-            font-weight: 600;
-        }
-
-        .dose-delta input {
-            width: 60px;
-            padding: 4px;
-            text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-
-        .dose-main {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 14px;
-        }
-
-        .dose-main input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 16px;
-        }
-
-        .dose-main button {
-            width: 80px;
-            padding: 10px;
-            border: none;
-            border-radius 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.1s, transform 0.1s;
-        }
-
-        .dose-main .plus {
-            background: #e9ecef;
-            color: #212529;
-        }
-
-        .dose-main .minus {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .dose-main button:active {
-            transform: scale(0.95);
-        }
-
-        .dose-pair {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .dose-pair button {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            background: #e9ecef;
-            color: #212529;
-            transition: background 0.1s, transform 0.1s;
-        }
-
-        .dose-pair button:active {
-            transform: scale(0.95);
-        }
-
-        .dose-pair .wash {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .dose-pair .intake {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .dose-pair .reset {
-            background: #e2e3e5;
-            color: #495057;
-        }
-
-        .pump-controls {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-
-        .pump-toggle {
-            flex: 1;
-            padding: 10px;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 15px;
-            transition: background 0.1s, transform 0.1s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .pump-toggle.active {
-            background: #28a745;
-        }
-
-        .pump-toggle:active {
-            transform: scale(0.98);
-        }
-
-        .pump-toggle img {
-            width: 18px;
-            height: 18px;
-        }
-
-        .reverse-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            background: #dc3545;
-            color: white;
-            transition: background 0.1s, transform 0.1s;
-        }
-
-        .reverse-btn.active {
-            background: #28a745;
-        }
-
-        .reverse-btn:active {
-            transform: scale(0.98);
-        }
-    </style>
 </head>
 
 <body>
@@ -722,14 +45,14 @@
                         <button onclick="adjustCNC('x', -cncStep)">-</button>
                         <input type="number" id="xInput" value="0" step="0.01">
                         <button onclick="adjustCNC('x', cncStep)">+</button>
-                        <input type="range" class="slider" id="xSlider" min="0" max="500" step="0.01" value="0">
+                        <input type="range" class="slider" id="xSlider" min="0" max="90" step="0.01" value="0">
                     </div>
                     <div class="control-row">
                         <label>Y</label>
                         <button onclick="adjustCNC('y', -cncStep)">-</button>
                         <input type="number" id="yInput" value="0" step="0.01">
                         <button onclick="adjustCNC('y', cncStep)">+</button>
-                        <input type="range" class="slider" id="ySlider" min="0" max="500" step="0.01" value="0">
+                        <input type="range" class="slider" id="ySlider" min="0" max="60" step="0.01" value="0">
                     </div>
 
                     <div class="move-row">
@@ -801,6 +124,7 @@
         <!-- === ARM === -->
         <div id="arm-ui" class="hidden">
             <div class="arm-grid">
+                <!-- <div class="arm-grid" style="grid-template-columns: 1fr 320px 1fr; gap:28px;"> -->
                 <div class="arm-col">
                     <h3>Прямая кинематика</h3>
                     <div class="step-control">
@@ -832,6 +156,26 @@
                         <label>Z</label>
                         <input type="range" class="slider" id="zSlider" min="0" max="300" value="150">
                         <input type="number" id="zValue" value="150" step="1">
+                    </div>
+                </div>
+
+
+
+
+                <div class="arm-col">
+                    <h3>Управление</h3>
+                    <div class="pad">
+                        <div></div>
+                        <button class="dir up" data-arm-dir="y+"><img src="misc/up.svg" alt="up"></button>
+                        <div></div>
+
+                        <button class="dir left" data-arm-dir="x-"><img src="misc/left.svg" alt="left"></button>
+                        <div></div>
+                        <button class="dir right" data-arm-dir="x+"><img src="misc/right.svg" alt="right"></button>
+
+                        <div></div>
+                        <button class="dir down" data-arm-dir="y-"><img src="misc/down.svg" alt="down"></button>
+                        <div></div>
                     </div>
                 </div>
 
@@ -1249,6 +593,53 @@
         gripperValue.textContent = '50%';
         j3Value.value = 0;
         j3Slider.value = 0;
+
+
+        // === ДЖОЙСТИК ДЛЯ РОБОРУКИ (аналог CNC) ===
+        document.querySelectorAll('#arm-ui button.dir').forEach(btn => {
+            const dir = btn.dataset.armDir; // x+, x-, y+, y-
+
+            let interval = null;
+
+            const step = () => {
+                if (!armPower) return;
+                const currentX = parseFloat(xTarget.value);
+                const currentY = parseFloat(yTarget.value);
+                let newX = currentX;
+                let newY = currentY;
+
+                if (dir === 'x+') newX += delta;
+                if (dir === 'x-') newX -= delta;
+                if (dir === 'y+') newY += delta;
+                if (dir === 'y-') newY -= delta;
+
+                // ограничиваем рабочую зону (примерно 50..400 по X, -250..250 по Y)
+                newX = Math.max(50, Math.min(400, newX));
+                newY = Math.max(-250, Math.min(250, newY));
+
+                xTarget.value = newX;
+                yTarget.value = newY;
+
+                // сразу пересчитываем обратную кинематику
+                inverseKinematics(newX, newY);
+            };
+
+            btn.addEventListener('mousedown', () => {
+                step();
+                interval = setInterval(step, 150);
+            });
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                step();
+                interval = setInterval(step, 150);
+            });
+
+            const stop = () => clearInterval(interval);
+            btn.addEventListener('mouseup', stop);
+            btn.addEventListener('mouseleave', stop);
+            btn.addEventListener('touchend', stop);
+            btn.addEventListener('touchcancel', stop);
+        });
     </script>
 </body>
 
