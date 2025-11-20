@@ -3,13 +3,13 @@
         "LOGIN": "TP-Link_0D14",
         "PASSWORD": "24827089"
     },
-    "wifi_kfu": {
-        "LOGIN": "CIMM",
-        "PASSWORD": "cgrtools"
-    },
     "wifi_home": {
         "LOGIN": "letai_B359",
         "PASSWORD": "Uui84KLq"
+    },
+    "wifi_kfu": {
+        "LOGIN": "CIMM",
+        "PASSWORD": "cgrtools"
     },
     "wifi_phone": {
         "LOGIN": "lipatovdn",

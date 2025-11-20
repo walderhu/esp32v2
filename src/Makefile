@@ -176,7 +176,7 @@ flash:
 
 
 server:
-	$(MAKE) -C server
+	@$(MAKE) --no-print-directory -C server
 
 FILE = _tcp.py
 MODULE = $(basename $(FILE))

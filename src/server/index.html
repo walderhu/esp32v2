@@ -162,22 +162,42 @@
 
 
 
+
                 <div class="arm-col">
                     <h3>Управление</h3>
-                    <div class="pad">
-                        <div></div>
-                        <button class="dir up" data-arm-dir="y+"><img src="misc/up.svg" alt="up"></button>
+                    <div class="pad arm-pad-extended"
+                        style="position:relative;display:grid;grid-template-columns:repeat(3,60px);grid-template-rows:60px 60px 60px;gap:12px;justify-content:center;align-content:center;">
+
+                        <button class="dir grab" data-grip="-"><img src="misc/let.png"></button>
+                        <button class="dir grab" data-grip="+"><img src="misc/grab.svg"></button>
                         <div></div>
 
-                        <button class="dir left" data-arm-dir="x-"><img src="misc/left.svg" alt="left"></button>
-                        <div></div>
-                        <button class="dir right" data-arm-dir="x+"><img src="misc/right.svg" alt="right"></button>
+                        <button class="dir left" data-arm-dir="x-"><img src="misc/left.svg"></button>
+                        <button class="dir up" data-arm-dir="y+"><img src="misc/up.svg"></button>
+                        <!-- <button class="dir z-down" data-z="-"><img src="misc/UP_Z.png"></button> -->
+                        <button class="dir z-down" data-z="-">Z+</button>
 
-                        <div></div>
-                        <button class="dir down" data-arm-dir="y-"><img src="misc/down.svg" alt="down"></button>
-                        <div></div>
+                        <button class="dir right" data-arm-dir="x+"><img src="misc/right.svg"></button>
+                        <button class="dir down" data-arm-dir="y-"><img src="misc/down.svg"></button>
+                        <!-- <button class="dir z-up" data-z="+"><img src="misc/DOWN_Z.png"></button> -->
+                        <button class="dir z-up" data-z="+">Z-</button>
+
+                        <button id="emergencyStop" class="dir"
+                            style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64px;height:64px;padding:0;background:#ff5555;border:none;border-radius:8px;z-index:10;">
+                            <img src="misc/stop.svg" style="width:36px;height:36px;filter:brightness(0)invert(1);">
+                        </button>
                     </div>
                 </div>
+
+
+
+
+
+
+
+
+
+
 
                 <div class="arm-col">
                     <h3>Обратная кинематика</h3>
@@ -595,50 +615,94 @@
         j3Slider.value = 0;
 
 
-        // === ДЖОЙСТИК ДЛЯ РОБОРУКИ (аналог CNC) ===
-        document.querySelectorAll('#arm-ui button.dir').forEach(btn => {
-            const dir = btn.dataset.armDir; // x+, x-, y+, y-
 
-            let interval = null;
 
-            const step = () => {
-                if (!armPower) return;
-                const currentX = parseFloat(xTarget.value);
-                const currentY = parseFloat(yTarget.value);
-                let newX = currentX;
-                let newY = currentY;
 
-                if (dir === 'x+') newX += delta;
-                if (dir === 'x-') newX -= delta;
-                if (dir === 'y+') newY += delta;
-                if (dir === 'y-') newY -= delta;
 
-                // ограничиваем рабочую зону (примерно 50..400 по X, -250..250 по Y)
-                newX = Math.max(50, Math.min(400, newX));
-                newY = Math.max(-250, Math.min(250, newY));
 
-                xTarget.value = newX;
-                yTarget.value = newY;
 
-                // сразу пересчитываем обратную кинематику
-                inverseKinematics(newX, newY);
-            };
 
-            btn.addEventListener('mousedown', () => {
-                step();
-                interval = setInterval(step, 150);
+
+
+
+
+
+
+
+        // === НОВАЯ ЛОГИКА ДЖОЙСТИКА РОБОРУКИ (XY + Z + Grab + ESTOP) ===
+        document.querySelectorAll('#arm-ui button.dir[data-arm-dir]') // XY кнопки
+            .forEach(btn => {
+                const dir = btn.dataset.armDir;
+                let interval = null;
+                const step = () => {
+                    if (!armPower) return;
+                    let newX = parseFloat(xTarget.value);
+                    let newY = parseFloat(yTarget.value);
+                    if (dir === 'x+') newX += delta;
+                    if (dir === 'x-') newX -= delta;
+                    if (dir === 'y+') newY += delta;
+                    if (dir === 'y-') newY -= delta;
+                    newX = Math.max(50, Math.min(400, newX));
+                    newY = Math.max(-250, Math.min(250, newY));
+                    xTarget.value = newX; yTarget.value = newY;
+                    inverseKinematics(newX, newY);
+                };
+                btn.addEventListener('mousedown', () => { step(); interval = setInterval(step, 150); });
+                btn.addEventListener('touchstart', e => { e.preventDefault(); step(); interval = setInterval(step, 150); });
+                const stop = () => clearInterval(interval);
+                btn.addEventListener('mouseup', stop); btn.addEventListener('mouseleave', stop);
+                btn.addEventListener('touchend', stop); btn.addEventListener('touchcancel', stop);
             });
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                step();
-                interval = setInterval(step, 150);
+
+        document.querySelectorAll('#arm-ui button.dir[data-z]') // Z кнопки
+            .forEach(btn => {
+                const sign = btn.dataset.z === '+' ? delta : -delta;
+                let interval = null;
+                const step = () => {
+                    if (!armPower) return;
+                    let newZ = parseInt(zTarget.value) + sign;
+                    newZ = Math.max(0, Math.min(300, newZ));
+                    zTarget.value = newZ; zValue.value = newZ; zSlider.value = newZ;
+                };
+                btn.addEventListener('mousedown', () => { step(); interval = setInterval(step, 150); });
+                btn.addEventListener('touchstart', e => { e.preventDefault(); step(); interval = setInterval(step, 150); });
+                const stop = () => clearInterval(interval);
+                btn.addEventListener('mouseup', stop); btn.addEventListener('mouseleave', stop);
+                btn.addEventListener('touchend', stop); btn.addEventListener('touchcancel', stop);
             });
 
-            const stop = () => clearInterval(interval);
-            btn.addEventListener('mouseup', stop);
-            btn.addEventListener('mouseleave', stop);
-            btn.addEventListener('touchend', stop);
-            btn.addEventListener('touchcancel', stop);
+        document.querySelectorAll('#arm-ui button.dir[data-grip]') // Grab кнопки
+            .forEach(btn => {
+                const sign = btn.dataset.grip === '+' ? 5 : -5;
+                let interval = null;
+                const step = () => {
+                    if (!armPower) return;
+                    let force = parseInt(gripperSlider.value) + sign;
+                    force = Math.max(0, Math.min(100, force));
+                    gripperSlider.value = force; gripperValue.textContent = force + '%';
+                    const phi = Math.round(force * 1.8 - 90);
+                    j3Value.value = phi; j3Slider.value = phi;
+                    sendArm({ type: 'gripper', force });
+                };
+                btn.addEventListener('mousedown', () => { step(); interval = setInterval(step, 100); });
+                btn.addEventListener('touchstart', e => { e.preventDefault(); step(); interval = setInterval(step, 100); });
+                const stop = () => clearInterval(interval);
+                btn.addEventListener('mouseup', stop); btn.addEventListener('mouseleave', stop);
+                btn.addEventListener('touchend', stop); btn.addEventListener('touchcancel', stop);
+            });
+
+        document.getElementById('emergencyStop').addEventListener('click', () => {
+            if (armPower) sendArm({ type: 'estop' });
+        });
+
+        // Добавь это в конец скрипта
+        document.getElementById('emergencyStop').addEventListener('click', function () {
+            if (!armPower) return;
+
+            this.style.background = '#4fc3f7';
+            setTimeout(() => this.style.background = '#ff5555', 200);
+
+            sendArm({ type: 'estop' });
         });
     </script>
 </body>
