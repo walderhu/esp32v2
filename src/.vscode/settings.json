@@ -30,15 +30,15 @@
         //
         "wire": true, //
         // "Makefile": true,
-        "modules": true,
+        // "modules": true,
         // "server": true,
         "micropython": true,
         "micropython-esp32-twai": true,
         //
         //
         //
-        "robohand.py": true,
-        "robohand2.py": true,
+        // "robohand.py": true,
+        // "robohand2.py": true,
         "TCP.py": true,
         "test2.py": true,
     },
