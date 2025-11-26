@@ -2,101 +2,70 @@ from machine import Pin
 import onewire, ds18x20
 import time
 
-# === настройки ===
-TARGET_TEMP = 60
-HYST = 3
+class PID:
+    def __init__(self, kp, ki, kd, setpoint=0, output_limits=(0, 100)):
+        self.kp = kp; self.ki = ki; self.kd = kd
+        self.setpoint = setpoint
+        self.output_limits = output_limits
+        self.integral = 0
+        self.last_error = None
 
-# Пины — подставь свои номера
+    def compute(self, value, dt):
+        error = self.setpoint - value
+        # P
+        p = self.kp * error
+        # I
+        self.integral += error * dt
+        i = self.ki * self.integral
+        # D
+        if self.last_error is None: d = 0
+        else: d = self.kd * (error - self.last_error) / dt
+        self.last_error = error
+        output = p + i + d
+        # ограничим выход 0..100%
+        low, high = self.output_limits
+        if output < low: output = low
+        if output > high: output = high
+        return output
+
+
+
+
+
+
+
+TARGET_TEMP = 40
 sensor_pin = Pin(13)
-set_pin = Pin(15, Pin.OUT)    # подаём импульс для "вкл"
-reset_pin = Pin(16, Pin.OUT)  # подаём импульс для "выкл"
-
-# Если модуль требует активный низкий сигнал, поменяй эти флаги
-SET_ACTIVE_HIGH = True   # True если лог.1 = включить
-RESET_ACTIVE_HIGH = True # True если лог.1 = выключить
-
-# Вспомогательные функции для подачи короткого импульса (безопасно)
-PULSE_MS = 120  # длительность импульса, обычно 50-200 ms — проверь документацию реле
-
-def _pulse(pin, active_high=True):
-    # никогда не держим оба канала одновременно активными
-    if pin is set_pin:
-        other = reset_pin
-    else:
-        other = set_pin
-    # гарантируем, что другой канал не активен
-    if (other.value() == 1 and ((other is set_pin and SET_ACTIVE_HIGH) or (other is reset_pin and RESET_ACTIVE_HIGH))):
-        # выключаем другой канал безопасно
-        if other is set_pin:
-            _deactivate_pin(other, SET_ACTIVE_HIGH)
-        else:
-            _deactivate_pin(other, RESET_ACTIVE_HIGH)
-
-    # активируем выбранный
-    if active_high:
-        pin.on()
-    else:
-        pin.off()
-    time.sleep_ms(PULSE_MS)
-    # деактивируем
-    if active_high:
-        pin.off()
-    else:
-        pin.on()
-
-def _activate_pin(pin, active_high=True):
-    if active_high:
-        pin.on()
-    else:
-        pin.off()
-
-def _deactivate_pin(pin, active_high=True):
-    if active_high:
-        pin.off()
-    else:
-        pin.on()
-
-def heater_on():
-    _pulse(set_pin, SET_ACTIVE_HIGH)
-
-def heater_off():
-    _pulse(reset_pin, RESET_ACTIVE_HIGH)
-
-# === DS18B20 init ===
+heater = Pin(15, Pin.OUT)
+pid = PID(kp=4.0, ki=0.5, kd=1.5, setpoint=TARGET_TEMP)
+PWM_PERIOD = 2.0 
 ow = onewire.OneWire(sensor_pin)
 ds = ds18x20.DS18X20(ow)
-
 roms = ds.scan()
-if not roms:
-    raise Exception("DS18B20 not found!")
-rom = roms[0]
-print("Sensor:", rom)
+if not roms: raise Exception("DS18B20 not found!")
+rom = roms[0]; print("Sensor:", rom)
+last_time = time.ticks_ms()
 
-# начальное состояние — считаем что выключено
-_deactivate_pin(set_pin, SET_ACTIVE_HIGH)
-_deactivate_pin(reset_pin, RESET_ACTIVE_HIGH)
-
-# цикл управления
 while True:
     try:
         ds.convert_temp()
-        time.sleep_ms(750)  # время конвертации для 12-bit
+        time.sleep_ms(500)
         temp = ds.read_temp(rom)
-        # иногда read_temp может вернуть None — проверим
-        if temp is None:
-            raise Exception("Ошибка чтения температуры (None)")
-        print(f"\rTemperature: {temp:.2f}°C   ", end="")
+        now = time.ticks_ms()
+        dt = (time.ticks_diff(now, last_time)) / 1000
+        last_time = now
+        power = pid.compute(temp, dt)   # 0..100 %
+        print(f"\rTemp={temp:.2f}°C  Power={power:.1f}%", end="")
 
-        if temp < TARGET_TEMP - HYST:
-            heater_on()
-        elif temp > TARGET_TEMP + HYST:
-            heater_off()
+        on_time = PWM_PERIOD * (power / 100)
+        off_time = PWM_PERIOD - on_time
 
-    except Exception as e:
-        # можно ловить специфично onewire.OneWireError, если доступно:
-        # from onewire import OneWireError
-        # except OneWireError:
-        print("\nОшибка датчика или шины OneWire:", e)
-        # при ошибке — безопасно выключаем нагрев
-        heater_off()
-        time.sleep(1)
+        if on_time > 0:
+            heater.on()
+            time.sleep(on_time)
+        if off_time > 0:
+            heater.off()
+            time.sleep(off_time)
+
+    except (onewire.OneWireError, Exception):
+        heater.off()
