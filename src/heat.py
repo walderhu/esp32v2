@@ -32,12 +32,14 @@ class PID:
 
 
 
-
-
 TARGET_TEMP = 40
 sensor_pin = Pin(13)
 heater = Pin(15, Pin.OUT)
-pid = PID(kp=4.0, ki=0.5, kd=1.5, setpoint=TARGET_TEMP)
+# pid = PID(kp=4.0, ki=0.5, kd=1.5, setpoint=TARGET_TEMP)
+pid = PID(kp=1.5, ki=0.3, kd=2, setpoint=TARGET_TEMP)
+# kp = 2.5; ki = 0.5; kd = 1.2 # более бодрый 
+# kp = 1; ki = 0.2; kd = 1.5 # супер мягкий долгий  
+
 PWM_PERIOD = 2.0 
 ow = onewire.OneWire(sensor_pin)
 ds = ds18x20.DS18X20(ow)
@@ -54,9 +56,8 @@ while True:
         now = time.ticks_ms()
         dt = (time.ticks_diff(now, last_time)) / 1000
         last_time = now
-        power = pid.compute(temp, dt)   # 0..100 %
+        power = pid.compute(temp, dt)
         print(f"\rTemp={temp:.2f}°C  Power={power:.1f}%", end="")
-
         on_time = PWM_PERIOD * (power / 100)
         off_time = PWM_PERIOD - on_time
 
@@ -69,3 +70,7 @@ while True:
 
     except (onewire.OneWireError, Exception):
         heater.off()
+
+
+
+# https://chatgpt.com/s/t_69276c758e3c8191a4bfcd89ccc11ba3
